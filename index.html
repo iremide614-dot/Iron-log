@@ -3,30 +3,32 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
-<meta name="theme-color" content="#0a0a0a"/>
+<meta name="theme-color" content="#0a0a0f"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-<meta name="apple-mobile-web-app-title" content="IronLog"/>
+<meta name="apple-mobile-web-app-title" content="Recomp"/>
 <link rel="manifest" href="/manifest.json"/>
 <link rel="apple-touch-icon" href="/icon-192.png"/>
-<title>IronLog</title>
+<title>Recomp</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600;700;800&display=swap');
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body,#root{min-height:100vh;background:#0a0a0a}
-input:focus{outline:none;border-color:#ff4d4d !important}
+html,body,#root{min-height:100vh;background:#0a0a0f}
+input:focus{outline:none;border-color:#4a8fff !important}
 input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 input[type=number]{-moz-appearance:textfield}
+textarea:focus{outline:none;border-color:#4a8fff !important}
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
+::-webkit-scrollbar-thumb{background:#1a2d5a;border-radius:2px}
 @keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes pulseGlow{0%,100%{opacity:.4}50%{opacity:1}}
 @keyframes toast{0%{opacity:0;transform:translateY(20px)}10%{opacity:1;transform:translateY(0)}90%{opacity:1}100%{opacity:0;transform:translateY(-10px)}}
 @keyframes photoIn{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
-.hov-btn:active{transform:scale(.97);border-color:#ff4d4d !important;color:#ff4d4d !important}
-.photo-thumb:active{border-color:#ff4d4d !important;opacity:1 !important}
+@keyframes timerPulse{0%,100%{box-shadow:0 0 0 0 rgba(74,143,255,0.3)}50%{box-shadow:0 0 0 8px rgba(74,143,255,0)}}
+.hov-btn:active{transform:scale(.97);border-color:#4a8fff !important;color:#4a8fff !important}
+.photo-thumb:active{border-color:#4a8fff !important;opacity:1 !important}
 </style>
 </head>
 <body>

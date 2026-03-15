@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ironlog-v2';
+const CACHE_NAME = 'recomp-v3';
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(['/'])));
   self.skipWaiting();
