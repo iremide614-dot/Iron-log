@@ -32,7 +32,7 @@ const CARDIO_TYPES=['Treadmill','Cycling','Rowing','Stair Climber','Jump Rope','
 
 // ===== STATE =====
 let state={
-  screen:'onboarding',
+  screen:'main', // no login, straight to app
   tab:'home',
   dropdown:false,
   preview:null,
@@ -50,6 +50,8 @@ let state={
   restDayPicker:false,
   addAbs:false,
   addCardio:false,
+  editingProfile:false,
+  backfillDate:null,
   activeWorkout:null,
   workoutStart:null,
   workoutElapsed:0,
@@ -58,14 +60,14 @@ let state={
 
 // ===== INIT =====
 function init(){
-  const prof=LS.get('prof');
-  if(prof&&prof.name){state.screen='main';state.tab='home';}
-  else{state.screen='onboarding';}
+  // No login — go straight to home. Set default profile if none exists.
+  if(!LS.get('prof')){LS.set('prof',{name:'Athlete',age:'',height:'',currentWeight:'',goalWeight:'',startWeight:''});}
+  state.screen='main';state.tab='home';
   if(LS.get('dk')===false)document.body.className='light';
   else document.body.className='dark';
   // Restore active workout if exists
   const aw=LS.get('aw');
-  if(aw){state.activeWorkout=aw;state.screen='main';state.tab='workout';}
+  if(aw){state.activeWorkout=aw;state.tab='workout';}
   render();
 }
 
@@ -361,11 +363,20 @@ function renderWorkout(){
 function renderExerciseCard(ex,ei){
   const last=getLastExercise(ex.name);
   const lastStr=last?last.sets.map(s=>(s.weight||'?')+'×'+(s.reps||'?')).join(', '):'';
+  const lastMax=last?last.maxWeight:0;
+  // Get current max from filled sets
+  const curMax=Math.max(0,...(ex.sets||[]).filter(s=>s.type!=='warmup'&&s.weight).map(s=>parseFloat(s.weight)||0));
+  let arrow='';
+  if(last&&curMax>0){
+    if(curMax>lastMax)arrow=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--gn)" stroke-width="3"><path d="M12 19V5M5 12l7-7 7 7"/></svg>`;
+    else if(curMax<lastMax)arrow=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--rd)" stroke-width="3"><path d="M12 5v14M5 12l7 7 7-7"/></svg>`;
+    else arrow=`<span style="font-size:10px;color:var(--c5);font-weight:700;">—</span>`;
+  }
   return`<div style="background:var(--cd);border-radius:14px;padding:11px;margin-bottom:7px;border:1px solid var(--bd);">
     <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
       <div>
-        <div style="display:flex;align-items:center;gap:4px;"><span style="font-size:13px;font-weight:700;color:var(--c1);">${ex.name}</span></div>
-        ${lastStr?`<div style="font-size:9px;color:var(--c5);font-family:'DM Mono',monospace;margin-top:2px;">Last: ${lastStr}</div>`:''}
+        <div style="display:flex;align-items:center;gap:5px;"><span style="font-size:13px;font-weight:700;color:var(--c1);">${ex.name}</span>${arrow}</div>
+        ${lastStr?`<div style="font-size:9px;color:var(--c5);font-family:'DM Mono',monospace;margin-top:2px;">Last: ${lastStr}</div>`:'<div style="font-size:9px;color:var(--c5);margin-top:2px;">First time — no history</div>'}
       </div>
       <div class="ex-drill" data-name="${ex.name}" style="width:20px;height:20px;border-radius:5px;background:var(--ip);display:flex;align-items:center;justify-content:center;cursor:pointer;">
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--c5)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
@@ -495,7 +506,50 @@ function renderRestDayPicker(){
 function renderDrillDown(){
   const nm=state.drill;
   const stats=getExerciseStats(nm);
-  const hist=getExerciseHistory(nm);
+  const hist=getExerciseHistory(nm).reverse(); // oldest first for chart
+  const histDesc=[...hist].reverse(); // newest first for list
+  
+  // Build SVG chart
+  let chart='';
+  if(hist.length>=2){
+    const weights=hist.map(h=>h.maxWeight);
+    const minW=Math.min(...weights)*0.9;
+    const maxW=Math.max(...weights)*1.1;
+    const range=maxW-minW||1;
+    const w=280,h2=80,pad=5;
+    const pts=weights.map((wt,i)=>{
+      const x=pad+i*(w-pad*2)/(weights.length-1);
+      const y=pad+(1-(wt-minW)/range)*(h2-pad*2);
+      return x+','+y;
+    });
+    chart=`<div style="background:var(--cd);border:1px solid var(--bd);border-radius:14px;padding:12px;margin-bottom:10px;">
+      <div style="font-size:9px;color:var(--c5);letter-spacing:2px;margin-bottom:6px;">WEIGHT OVER TIME</div>
+      <div style="position:relative;">
+        <svg viewBox="0 0 ${w} ${h2}" style="width:100%;height:80px;" preserveAspectRatio="none">
+          <polyline points="${pts.join(' ')}" fill="none" stroke="var(--bl)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          ${weights.map((wt,i)=>{
+            const x=pad+i*(w-pad*2)/(weights.length-1);
+            const y=pad+(1-(wt-minW)/range)*(h2-pad*2);
+            return`<circle cx="${x}" cy="${y}" r="3" fill="var(--bl)"/>`;
+          }).join('')}
+        </svg>
+        <div style="display:flex;justify-content:space-between;font-size:8px;color:var(--c6);margin-top:2px;">
+          <span>${shortDate(hist[0].date)}</span>
+          <span>${shortDate(hist[hist.length-1].date)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:4px;">
+          <span style="font-size:9px;color:var(--c5);">Low: ${Math.min(...weights)} lb</span>
+          <span style="font-size:9px;color:var(--c5);">High: ${Math.max(...weights)} lb</span>
+        </div>
+      </div>
+    </div>`;
+  } else if(hist.length===1){
+    chart=`<div style="background:var(--cd);border:1px solid var(--bd);border-radius:14px;padding:16px;margin-bottom:10px;text-align:center;">
+      <div style="font-size:9px;color:var(--c5);letter-spacing:2px;margin-bottom:4px;">WEIGHT OVER TIME</div>
+      <div style="font-size:12px;color:var(--c4);">Need 2+ sessions to show chart</div>
+    </div>`;
+  }
+
   return`<div style="position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(4,5,8,.96);z-index:20;overflow-y:auto;">
     <div style="padding:14px 16px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
@@ -509,15 +563,16 @@ function renderDrillDown(){
           <div style="background:var(--dp);border-radius:7px;padding:9px 6px;text-align:center;"><div style="font-size:16px;font-weight:700;color:var(--c1);">${stats.sessions}</div><div style="font-size:7px;color:var(--c6);margin-top:2px;">SESSIONS</div></div>
         </div>
       </div>
+      ${chart}
       <div style="font-size:9px;color:var(--c5);letter-spacing:2px;margin-bottom:6px;">ALL SESSIONS</div>
-      ${hist.map(h=>`<div style="background:var(--cd);border:1px solid var(--bd);border-radius:10px;padding:10px;margin-bottom:5px;">
+      ${histDesc.map(h=>`<div style="background:var(--cd);border:1px solid var(--bd);border-radius:10px;padding:10px;margin-bottom:5px;">
         <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
           <span style="font-size:11px;color:var(--c3);">${shortDate(h.date)}</span>
           <span style="font-size:10px;color:var(--c4);">${fmtVol(h.volume)} vol</span>
         </div>
         <div style="font-size:12px;color:var(--c2);font-family:'DM Mono',monospace;">${h.sets.map(s=>(s.weight||'?')+'×'+(s.reps||'?')).join(', ')}</div>
       </div>`).join('')}
-      ${hist.length===0?'<div style="text-align:center;padding:20px;font-size:12px;color:var(--c5);">No sessions yet</div>':''}
+      ${histDesc.length===0?'<div style="text-align:center;padding:20px;font-size:12px;color:var(--c5);">No sessions yet</div>':''}
     </div>
   </div>`;
 }
@@ -581,12 +636,7 @@ function renderCalendar(){
   } else if(isFuture){
     detail=`<div style="background:var(--cd);border:1px solid var(--bd);border-radius:14px;padding:18px;text-align:center;">
       <div style="font-size:14px;font-weight:600;color:var(--c2);">${shortDate(selDate)}</div>
-      <div style="font-size:11px;color:var(--pu);margin:4px 0 12px;">Future date</div>
-      <div id="cal-plan" style="background:linear-gradient(135deg,#1a3a7a,#0d2459);border-radius:10px;padding:12px;font-size:12px;font-weight:600;color:#fff;cursor:pointer;margin-bottom:8px;">+ PLAN WORKOUT</div>
-      <div style="display:flex;gap:6px;">
-        <div id="cal-rest-future" style="flex:1;background:var(--ip);border:1px solid var(--bd);border-radius:8px;padding:9px;text-align:center;font-size:10px;color:var(--c4);cursor:pointer;">+ Rest Day</div>
-        <div id="cal-active-future" style="flex:1;background:var(--ip);border:1px solid var(--bd);border-radius:8px;padding:9px;text-align:center;font-size:10px;color:var(--c4);cursor:pointer;">+ Active Rec</div>
-      </div>
+      <div style="font-size:11px;color:var(--c5);margin:4px 0;">Upcoming</div>
     </div>`;
   } else {
     detail=`<div style="background:var(--cd);border:1px solid var(--bd);border-radius:14px;padding:18px;text-align:center;">
@@ -693,12 +743,40 @@ function renderMe(){
   const p=getProfile();
   const bw=getWeights();
   const latest=bw.length?bw[bw.length-1]:null;
-  const startW=parseFloat(p.currentWeight)||0;
+  const startW=parseFloat(p.startWeight)||parseFloat(p.currentWeight)||0;
   const goalW=parseFloat(p.goalWeight)||0;
   const curW=latest?parseFloat(latest.weight):startW;
   const progress=startW&&goalW&&startW!==goalW?Math.max(0,Math.min(100,Math.round(Math.abs(startW-curW)/Math.abs(startW-goalW)*100))):0;
 
+  // Edit profile form
+  if(state.editingProfile){
+    return`<div style="padding:10px 16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div style="font-size:16px;font-weight:700;color:var(--c1);">Edit Profile</div>
+        <div id="prof-cancel" style="font-size:11px;color:var(--c4);border:1px solid var(--bd);padding:5px 10px;border-radius:8px;cursor:pointer;">Cancel</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div><div style="font-size:9px;letter-spacing:2px;color:var(--c4);margin-bottom:4px;">NAME</div><input type="text" id="prof-name" value="${p.name||''}" placeholder="Your name" style="font-size:14px;"/></div>
+        <div style="display:flex;gap:8px;">
+          <div style="flex:1;"><div style="font-size:9px;letter-spacing:2px;color:var(--c4);margin-bottom:4px;">AGE</div><input type="number" id="prof-age" value="${p.age||''}" placeholder="-" style="text-align:center;font-size:14px;padding:11px;border-radius:10px;"/></div>
+          <div style="flex:1;"><div style="font-size:9px;letter-spacing:2px;color:var(--c4);margin-bottom:4px;">HEIGHT</div><input type="text" id="prof-height" value="${p.height||''}" placeholder="5'10&quot;" style="text-align:center;font-size:14px;"/></div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <div style="flex:1;"><div style="font-size:9px;letter-spacing:2px;color:var(--c4);margin-bottom:4px;">CURRENT LB</div><input type="number" id="prof-cw" value="${p.currentWeight||''}" placeholder="-" style="text-align:center;font-size:14px;padding:11px;border-radius:10px;"/></div>
+          <div style="flex:1;"><div style="font-size:9px;letter-spacing:2px;color:var(--c4);margin-bottom:4px;">GOAL LB</div><input type="number" id="prof-gw" value="${p.goalWeight||''}" placeholder="-" style="text-align:center;font-size:14px;padding:11px;border-radius:10px;"/></div>
+        </div>
+      </div>
+      <div id="prof-save" style="background:var(--bl);border-radius:14px;padding:14px;text-align:center;font-size:14px;font-weight:700;color:#000;cursor:pointer;margin-top:20px;">SAVE</div>
+    </div>`;
+  }
+
   return`<div style="padding:10px 16px;">
+    <!-- Set Up Profile prompt if no name -->
+    ${p.name==='Athlete'?`<div style="background:rgba(74,143,255,.06);border:1px solid rgba(74,143,255,.12);border-radius:12px;padding:14px;margin-bottom:12px;text-align:center;">
+      <div style="font-size:13px;font-weight:600;color:var(--bl);margin-bottom:4px;">Set up your profile</div>
+      <div style="font-size:11px;color:var(--c4);margin-bottom:10px;">Add your name, age, and goals</div>
+      <div id="edit-profile" style="background:var(--bl);border-radius:10px;padding:10px;font-size:12px;font-weight:700;color:#000;cursor:pointer;">SET UP</div>
+    </div>`:`
     <div style="background:var(--cd);border:1px solid var(--bd);border-radius:16px;padding:14px;margin-bottom:10px;">
       <div style="display:flex;align-items:center;gap:12px;">
         <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#1a3a7a,#0d2459);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:var(--bl);flex-shrink:0;">${(p.name||'?')[0].toUpperCase()}</div>
@@ -710,7 +788,7 @@ function renderMe(){
         <div style="width:100%;height:6px;background:var(--ip);border-radius:3px;overflow:hidden;"><div style="width:${progress}%;height:100%;background:linear-gradient(90deg,var(--bl),var(--gn));border-radius:3px;"></div></div>
         <div style="display:flex;justify-content:space-between;margin-top:3px;"><span style="font-size:8px;color:var(--c6);">Start: ${startW}</span><span style="font-size:8px;color:var(--gn);">${progress}%</span></div>
       </div>`:''}
-    </div>
+    </div>`}
     <!-- Body Weight -->
     <div style="font-size:9px;color:var(--bl);letter-spacing:2px;font-weight:600;margin-bottom:5px;">BODY WEIGHT</div>
     <div style="background:var(--cd);border:1px solid var(--bd);border-radius:14px;padding:12px;margin-bottom:10px;">
@@ -727,12 +805,46 @@ function renderMe(){
     </div>
     <!-- Progress Photos -->
     <div style="font-size:9px;color:var(--bl);letter-spacing:2px;font-weight:600;margin-bottom:5px;">PROGRESS PHOTOS</div>
-    <div style="background:var(--cd);border:1px solid var(--bd);border-radius:14px;padding:12px;">
+    <div style="background:var(--cd);border:1px solid var(--bd);border-radius:14px;padding:12px;margin-bottom:10px;">
       <div style="display:flex;gap:5px;">
-        ${['FRONT','SIDE','BACK'].map(t=>`<div style="flex:1;"><div style="width:100%;aspect-ratio:3/4;background:var(--ip);border-radius:8px;display:flex;align-items:center;justify-content:center;border:1px dashed var(--bd);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--c6)" stroke-width="1.5"><path d="M12 5v14M5 12h14"/></svg></div><div style="text-align:center;font-size:8px;color:var(--c5);margin-top:3px;letter-spacing:1px;">${t}</div></div>`).join('')}
+        ${['front','side','back'].map(t=>{
+          const photos=LS.get('photos')||{};
+          const todayPhotos=photos[today()]||{};
+          const src=todayPhotos[t]||'';
+          return`<div style="flex:1;">
+            <div class="photo-slot-btn" data-type="${t}" style="width:100%;aspect-ratio:3/4;background:var(--ip);border-radius:8px;display:flex;align-items:center;justify-content:center;border:1px dashed var(--bd);cursor:pointer;overflow:hidden;position:relative;">
+              ${src?`<img src="${src}" style="width:100%;height:100%;object-fit:cover;border-radius:7px;"/>`:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--c6)" stroke-width="1.5"><path d="M12 5v14M5 12h14"/></svg>`}
+            </div>
+            <div style="text-align:center;font-size:8px;color:var(--c5);margin-top:3px;letter-spacing:1px;">${t.toUpperCase()}</div>
+            <input type="file" accept="image/*" class="photo-input" data-type="${t}" style="display:none;"/>
+          </div>`;
+        }).join('')}
       </div>
-      <p style="font-size:10px;color:var(--c5);text-align:center;margin-top:8px;">Photo upload coming soon</p>
+      <div style="display:flex;gap:5px;margin-top:8px;">
+        <div id="photo-camera" style="flex:1;background:var(--ip);border:1px solid var(--bd);border-radius:8px;padding:8px;text-align:center;font-size:10px;color:var(--bl);cursor:pointer;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--bl)" stroke-width="2" style="vertical-align:-2px;margin-right:3px;"><rect x="2" y="6" width="20" height="14" rx="2"/><circle cx="12" cy="13" r="4"/><path d="M8 2h8l2 4H6l2-4"/></svg>Camera
+        </div>
+        <div id="photo-gallery" style="flex:1;background:var(--ip);border:1px solid var(--bd);border-radius:8px;padding:8px;text-align:center;font-size:10px;color:var(--bl);cursor:pointer;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--bl)" stroke-width="2" style="vertical-align:-2px;margin-right:3px;"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>Gallery
+        </div>
+      </div>
     </div>
+    <!-- Photo Timeline -->
+    ${(()=>{
+      const photos=LS.get('photos')||{};
+      const dates=Object.keys(photos).sort().reverse().slice(0,5);
+      if(!dates.length)return'';
+      return`<div style="font-size:9px;color:var(--c5);letter-spacing:2px;font-weight:600;margin-bottom:5px;">PHOTO TIMELINE</div>
+      ${dates.map(d=>{
+        const p=photos[d];
+        return`<div style="background:var(--cd);border:1px solid var(--bd);border-radius:10px;padding:10px;margin-bottom:6px;">
+          <div style="font-size:10px;color:var(--c4);margin-bottom:6px;">${shortDate(d)}</div>
+          <div style="display:flex;gap:4px;">
+            ${['front','side','back'].map(t=>p[t]?`<div style="flex:1;aspect-ratio:3/4;border-radius:6px;overflow:hidden;"><img src="${p[t]}" style="width:100%;height:100%;object-fit:cover;"/></div>`:`<div style="flex:1;aspect-ratio:3/4;background:var(--ip);border-radius:6px;"></div>`).join('')}
+          </div>
+        </div>`;
+      }).join('')}`;
+    })()}
   </div>`;
 }
 
@@ -994,8 +1106,9 @@ function bindEvents(){
   // Calendar log past
   const clp=root.querySelector('#cal-log-past');
   if(clp)clp.onclick=()=>{
-    // Start a workout for this date (simplified)
+    // Store the date we're backfilling for, then open split picker
     const selDate=fmtDate(new Date(state.calYear,state.calMonth,state.calDay));
+    state.backfillDate=selDate;
     state.dropdown=true;state.tab='home';render();
   };
 
@@ -1017,12 +1130,70 @@ function bindEvents(){
 
   // Edit profile
   const ep=root.querySelector('#edit-profile');
-  if(ep)ep.onclick=()=>{
-    // Simple edit via prompts for now
+  if(ep)ep.onclick=()=>{state.editingProfile=true;render()};
+  // Profile save
+  const ps=root.querySelector('#prof-save');
+  if(ps)ps.onclick=()=>{
     const p=getProfile();
-    const name=prompt('Name:',p.name||'');
-    if(name!==null){p.name=name;LS.set('prof',p);render()}
+    const n=root.querySelector('#prof-name');if(n)p.name=n.value||'Athlete';
+    const a=root.querySelector('#prof-age');if(a)p.age=a.value;
+    const h=root.querySelector('#prof-height');if(h)p.height=h.value;
+    const cw=root.querySelector('#prof-cw');if(cw){p.currentWeight=cw.value;if(!p.startWeight)p.startWeight=cw.value;}
+    const gw=root.querySelector('#prof-gw');if(gw)p.goalWeight=gw.value;
+    LS.set('prof',p);state.editingProfile=false;render();
   };
+  const pc=root.querySelector('#prof-cancel');
+  if(pc)pc.onclick=()=>{state.editingProfile=false;render()};
+
+  // Progress photo handlers
+  let activePhotoType=null;
+  root.querySelectorAll('.photo-slot-btn').forEach(el=>{
+    el.onclick=()=>{
+      activePhotoType=el.dataset.type;
+      const inp=root.querySelector('.photo-input[data-type="'+el.dataset.type+'"]');
+      if(inp){inp.removeAttribute('capture');inp.click();}
+    };
+  });
+  const pcam=root.querySelector('#photo-camera');
+  if(pcam)pcam.onclick=()=>{
+    activePhotoType=activePhotoType||'front';
+    const inp=root.querySelector('.photo-input[data-type="'+activePhotoType+'"]');
+    if(inp){inp.setAttribute('capture','environment');inp.click();}
+  };
+  const pgal=root.querySelector('#photo-gallery');
+  if(pgal)pgal.onclick=()=>{
+    activePhotoType=activePhotoType||'front';
+    const inp=root.querySelector('.photo-input[data-type="'+activePhotoType+'"]');
+    if(inp){inp.removeAttribute('capture');inp.click();}
+  };
+  root.querySelectorAll('.photo-input').forEach(inp=>{
+    inp.onchange=(e)=>{
+      const file=e.target.files[0];
+      if(!file)return;
+      const type=inp.dataset.type;
+      const reader=new FileReader();
+      reader.onload=(ev)=>{
+        // Resize to save storage space
+        const img=new Image();
+        img.onload=()=>{
+          const canvas=document.createElement('canvas');
+          const max=400;
+          let w=img.width,h=img.height;
+          if(w>h){h=h*(max/w);w=max;}else{w=w*(max/h);h=max;}
+          canvas.width=w;canvas.height=h;
+          canvas.getContext('2d').drawImage(img,0,0,w,h);
+          const dataUrl=canvas.toDataURL('image/jpeg',0.7);
+          const photos=LS.get('photos')||{};
+          if(!photos[today()])photos[today()]={};
+          photos[today()][type]=dataUrl;
+          LS.set('photos',photos);
+          render();
+        };
+        img.src=ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    };
+  });
 
   // Rest duration controls
   const rda=root.querySelector('#rd-add');
@@ -1033,6 +1204,7 @@ function bindEvents(){
 
 // ===== WORKOUT ACTIONS =====
 function startWorkout(splitName,exercises,abs,cardio){
+  const wkDate=state.backfillDate||today();
   state.activeWorkout={
     id:uid(),
     split:splitName||'Blank',
@@ -1040,7 +1212,7 @@ function startWorkout(splitName,exercises,abs,cardio){
     abs:abs||[],
     cardio:cardio||[],
     notes:'',
-    date:today()
+    date:wkDate
   };
   state.workoutStart=Date.now();
   state.workoutElapsed=0;
@@ -1049,6 +1221,7 @@ function startWorkout(splitName,exercises,abs,cardio){
   state.preview=null;
   state.addAbs=false;
   state.addCardio=false;
+  state.backfillDate=null;
   LS.set('aw',state.activeWorkout);
   // Start workout timer
   if(state.workoutInterval)clearInterval(state.workoutInterval);
