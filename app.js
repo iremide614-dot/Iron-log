@@ -52,6 +52,7 @@ let state={
   addCardio:false,
   editingProfile:false,
   backfillDate:null,
+  editingSplit:null,
   activeWorkout:null,
   workoutStart:null,
   workoutElapsed:0,
@@ -79,7 +80,7 @@ function today(){return fmtDate(new Date())}
 function fmtDate(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function dateStr(ds){const d=new Date(ds+'T12:00:00');const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return days[d.getDay()]+', '+months[d.getMonth()]+' '+d.getDate()}
 function shortDate(ds){const d=new Date(ds+'T12:00:00');const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return months[d.getMonth()]+' '+d.getDate()}
-function getSplits(){return LS.get('splits')||DEFAULT_SPLITS}
+function getSplits(){const s=LS.get('splits');if(s)return s;const copy=JSON.parse(JSON.stringify(DEFAULT_SPLITS));LS.set('splits',copy);return copy;}
 function getWorkouts(){return LS.get('wk')||[]}
 function getRestDays(){return LS.get('rest')||[]}
 function getWeights(){return LS.get('bw')||[]}
@@ -250,10 +251,22 @@ function renderHome(){
       <div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:4px;">Choose your split</div>
     </div>
     <!-- Rest Day -->
-    <div id="log-rest" style="background:var(--cd);border:1px solid var(--bd);border-radius:12px;padding:11px;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px;cursor:pointer;">
+    <div id="log-rest" style="background:var(--cd);border:1px solid var(--bd);border-radius:12px;padding:11px;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;cursor:pointer;">
       <span style="font-size:13px;">&#128164;</span>
       <span style="font-size:12px;color:var(--c3);">Log Rest Day / Active Recovery</span>
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--c5)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+    <!-- Rest Timer Quick Set -->
+    <div style="background:var(--cd);border:1px solid var(--bd);border-radius:12px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:6px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--bl)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        <span style="font-size:12px;color:var(--c3);">Rest timer</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:5px;">
+        <div id="rd-sub" style="width:32px;height:32px;background:var(--ip);border-radius:7px;display:flex;align-items:center;justify-content:center;color:var(--bl);font-size:16px;cursor:pointer;">−</div>
+        <span style="font-size:15px;font-weight:700;color:var(--bl);font-family:'DM Mono',monospace;min-width:38px;text-align:center;">${getRestDuration()}s</span>
+        <div id="rd-add" style="width:32px;height:32px;background:var(--ip);border-radius:7px;display:flex;align-items:center;justify-content:center;color:var(--bl);font-size:16px;cursor:pointer;">+</div>
+      </div>
     </div>
     <!-- Recent -->
     <div style="font-size:10px;font-weight:600;color:var(--c4);letter-spacing:2px;margin-bottom:7px;">RECENT</div>
@@ -340,19 +353,33 @@ function renderWorkout(){
   if(!state.activeWorkout)return'<div style="padding:40px;text-align:center;color:var(--c4);">No active workout</div>';
   const w=state.activeWorkout;
   return`<div style="padding:5px 16px;">
-    <div style="display:flex;gap:5px;margin-bottom:8px;">
+    <div style="display:flex;gap:5px;margin-bottom:6px;">
       <div id="wk-finish" style="flex:1;background:rgba(34,204,102,.06);border:1px solid rgba(34,204,102,.15);border-radius:10px;padding:9px;text-align:center;font-size:11px;font-weight:600;color:var(--gn);cursor:pointer;">Finish</div>
       <div id="wk-cancel" style="flex:1;background:rgba(255,85,85,.04);border:1px solid rgba(255,85,85,.1);border-radius:10px;padding:9px;text-align:center;font-size:11px;color:var(--rd);cursor:pointer;">Cancel</div>
     </div>
+    <!-- Rest timer adjust -->
+    <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;padding:6px 0;">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--bl)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      <span style="font-size:10px;color:var(--c4);">Rest:</span>
+      <div id="rd-sub" style="width:28px;height:28px;background:var(--ip);border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--bl);font-size:14px;cursor:pointer;">−</div>
+      <span style="font-size:14px;font-weight:700;color:var(--bl);font-family:'DM Mono',monospace;">${getRestDuration()}s</span>
+      <div id="rd-add" style="width:28px;height:28px;background:var(--ip);border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--bl);font-size:14px;cursor:pointer;">+</div>
+    </div>
     ${(w.exercises||[]).map((ex,ei)=>renderExerciseCard(ex,ei)).join('')}
-    ${w.abs&&w.abs.length?`
-      <div style="display:flex;align-items:center;gap:8px;margin:8px 0 5px;"><div style="flex:1;height:1px;background:var(--bd);"></div><span style="font-size:9px;letter-spacing:2px;color:var(--bl);font-weight:600;">ABS</span><div style="flex:1;height:1px;background:var(--bd);"></div></div>
-      ${(w.abs||[]).map((ab,ai)=>renderAbsCard(ab,ai)).join('')}
-    `:''}
-    ${w.cardio&&w.cardio.length?`
-      <div style="display:flex;align-items:center;gap:8px;margin:8px 0 5px;"><div style="flex:1;height:1px;background:var(--bd);"></div><span style="font-size:9px;letter-spacing:2px;color:var(--gn);font-weight:600;">CARDIO</span><div style="flex:1;height:1px;background:var(--bd);"></div></div>
-      ${(w.cardio||[]).map((c,ci)=>renderCardioCard(c,ci)).join('')}
-    `:''}
+    <!-- ABS -->
+    <div style="display:flex;align-items:center;gap:8px;margin:10px 0 5px;"><div style="flex:1;height:1px;background:var(--bd);"></div><span style="font-size:9px;letter-spacing:2px;color:var(--bl);font-weight:600;">ABS</span><div style="flex:1;height:1px;background:var(--bd);"></div></div>
+    ${(w.abs||[]).map((ab,ai)=>renderAbsCard(ab,ai)).join('')}
+    <div style="display:flex;gap:5px;margin-bottom:8px;">
+      <select id="abs-select" style="flex:1;font-size:14px;padding:10px;border-radius:8px;"><option value="">Choose abs...</option>${ABS_EXERCISES.map(e=>`<option value="${e}">${e}</option>`).join('')}<option value="__custom">Custom...</option></select>
+      <div id="wk-add-abs" style="background:var(--bl);border-radius:8px;padding:10px 14px;font-size:12px;font-weight:700;color:#000;cursor:pointer;white-space:nowrap;display:flex;align-items:center;">+ Add</div>
+    </div>
+    <!-- CARDIO -->
+    <div style="display:flex;align-items:center;gap:8px;margin:10px 0 5px;"><div style="flex:1;height:1px;background:var(--bd);"></div><span style="font-size:9px;letter-spacing:2px;color:var(--gn);font-weight:600;">CARDIO</span><div style="flex:1;height:1px;background:var(--bd);"></div></div>
+    ${(w.cardio||[]).map((c,ci)=>renderCardioCard(c,ci)).join('')}
+    <div style="display:flex;gap:5px;margin-bottom:8px;">
+      <select id="cardio-select" style="flex:1;font-size:14px;padding:10px;border-radius:8px;"><option value="">Choose cardio...</option>${CARDIO_TYPES.map(e=>`<option value="${e}">${e}</option>`).join('')}<option value="__custom">Custom...</option></select>
+      <div id="wk-add-cardio" style="background:var(--gn);border-radius:8px;padding:10px 14px;font-size:12px;font-weight:700;color:#000;cursor:pointer;white-space:nowrap;display:flex;align-items:center;">+ Add</div>
+    </div>
     <div id="wk-add-ex" style="background:linear-gradient(135deg,#1a3a7a,#0d2459);border-radius:12px;padding:12px;text-align:center;font-size:12px;font-weight:600;letter-spacing:2px;color:#fff;cursor:pointer;margin:8px 0;">+ ADD EXERCISE</div>
     <div style="margin-bottom:8px;">
       <textarea id="wk-notes" placeholder="Notes: How did it feel?" style="font-size:12px;min-height:50px;font-style:italic;">${w.notes||''}</textarea>
@@ -404,28 +431,39 @@ function renderExerciseCard(ex,ei){
 
 function renderAbsCard(ab,ai){
   return`<div style="background:var(--cd);border-radius:14px;padding:11px;margin-bottom:7px;border:1px solid var(--bd);">
-    <div style="font-size:13px;font-weight:700;color:var(--c1);margin-bottom:5px;">${ab.name}</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+      <div style="font-size:13px;font-weight:700;color:var(--c1);">${ab.name} <span style="font-size:9px;color:var(--c5);font-weight:400;">${ab.timed?'(timed)':'(reps)'}</span></div>
+      <div class="abs-remove" data-ai="${ai}" style="width:28px;height:28px;border-radius:6px;background:rgba(255,85,85,.06);display:flex;align-items:center;justify-content:center;cursor:pointer;">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--rd)" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </div>
+    </div>
     <div style="display:flex;padding:3px 0;font-size:8px;color:var(--c6);font-family:'DM Mono',monospace;border-bottom:1px solid var(--bd);">
-      <span style="width:36px;">SET</span><span style="flex:1;text-align:center;">${ab.timed?'SEC':'REPS'}</span><span style="width:32px;"></span>
+      <span style="width:36px;">SET</span><span style="flex:1;text-align:center;">${ab.timed?'SEC':'REPS'}</span><span style="width:36px;"></span>
     </div>
     ${(ab.sets||[]).map((s,si)=>`
       <div style="display:flex;align-items:center;padding:3px 0;">
         <span style="width:36px;font-size:10px;color:var(--c5);font-family:'DM Mono',monospace;">${si+1}</span>
-        <div style="flex:1;margin-right:3px;"><input type="number" value="${s.value||''}" placeholder="-" style="font-size:12px;padding:6px;border-radius:6px;"/></div>
-        <div style="width:36px;height:36px;border-radius:8px;${s.checked?'background:var(--bl)':'background:var(--ip);border:1px solid var(--bd)'};display:flex;align-items:center;justify-content:center;cursor:pointer;">
+        <div style="flex:1;margin-right:3px;"><input type="number" class="abs-val" data-ai="${ai}" data-si="${si}" value="${s.value||''}" placeholder="${ab.timed?'60':'-'}" style="font-size:16px;padding:8px;border-radius:6px;"/></div>
+        <div class="abs-check" data-ai="${ai}" data-si="${si}" style="width:36px;height:36px;border-radius:8px;${s.checked?'background:var(--bl)':'background:var(--ip);border:1px solid var(--bd)'};display:flex;align-items:center;justify-content:center;cursor:pointer;">
           ${s.checked?'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3"><path d="M5 12l5 5L19 7"/></svg>':'<span style="font-size:12px;color:var(--c5);">○</span>'}
         </div>
       </div>
     `).join('')}
+    <div class="abs-add-set" data-ai="${ai}" style="border:1px dashed var(--bd);border-radius:6px;padding:6px;text-align:center;font-size:9px;color:var(--c5);cursor:pointer;margin-top:5px;">+ Add set</div>
   </div>`;
 }
 
 function renderCardioCard(c,ci){
   return`<div style="background:var(--cd);border-radius:14px;padding:11px;margin-bottom:7px;border:1px solid var(--bd);">
-    <div style="font-size:13px;font-weight:700;color:var(--c1);margin-bottom:7px;">${c.type}</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;">
+      <div style="font-size:13px;font-weight:700;color:var(--c1);">${c.type}</div>
+      <div class="cardio-remove" data-ci="${ci}" style="width:28px;height:28px;border-radius:6px;background:rgba(255,85,85,.06);display:flex;align-items:center;justify-content:center;cursor:pointer;">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--rd)" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </div>
+    </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;">
-      ${[['MIN',c.minutes||''],['DIST',c.distance||''],['CAL',c.calories||'']].map(([l,v])=>`
-        <div><div style="font-size:8px;color:var(--c5);letter-spacing:1px;margin-bottom:3px;">${l}</div><input type="number" value="${v}" placeholder="-" style="font-size:12px;padding:6px;border-radius:6px;"/></div>
+      ${[['minutes','MIN',c.minutes||''],['distance','DIST',c.distance||''],['calories','CAL',c.calories||'']].map(([f,l,v])=>`
+        <div><div style="font-size:8px;color:var(--c5);letter-spacing:1px;margin-bottom:3px;">${l}</div><input type="number" class="cardio-val" data-ci="${ci}" data-field="${f}" value="${v}" placeholder="-" style="font-size:16px;padding:8px;border-radius:6px;"/></div>
       `).join('')}
     </div>
   </div>`;
@@ -873,17 +911,23 @@ function renderMe(){
           const diff=prev?(parseFloat(e.weight)-parseFloat(prev.weight)).toFixed(1):null;
           const diffColor=diff===null?'':parseFloat(diff)<0?'var(--gn)':parseFloat(diff)>0?'var(--rd)':'var(--c5)';
           const diffArrow=diff===null?'':parseFloat(diff)<0?'↓':parseFloat(diff)>0?'↑':'—';
-          return`<div style="padding:10px 12px;display:flex;align-items:center;justify-content:space-between;${i<sorted.length-1?'border-bottom:1px solid var(--bd)':''}">
-            <div style="display:flex;align-items:center;gap:8px;">
-              ${e.photo?`<div style="width:32px;height:32px;border-radius:6px;overflow:hidden;flex-shrink:0;"><img src="${e.photo}" style="width:100%;height:100%;object-fit:cover;"/></div>`:''}
-              <div>
-                <div style="font-size:14px;font-weight:700;color:var(--c1);">${e.weight} <span style="font-size:10px;font-weight:400;color:var(--c4);">lb</span></div>
-                <div style="font-size:10px;color:var(--c5);">${shortDate(e.date)}${e.time?' · '+e.time:''}</div>
+          const realIdx=allBw.length-1-i; // index in original array for deletion
+          return`<div class="bw-entry" style="position:relative;overflow:hidden;${i<sorted.length-1?'border-bottom:1px solid var(--bd)':''}">
+            <div style="padding:10px 12px;display:flex;align-items:center;justify-content:space-between;background:var(--cd);position:relative;z-index:1;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                ${e.photo?`<div style="width:32px;height:32px;border-radius:6px;overflow:hidden;flex-shrink:0;"><img src="${e.photo}" style="width:100%;height:100%;object-fit:cover;"/></div>`:''}
+                <div>
+                  <div style="font-size:14px;font-weight:700;color:var(--c1);">${e.weight} <span style="font-size:10px;font-weight:400;color:var(--c4);">lb</span></div>
+                  <div style="font-size:10px;color:var(--c5);">${shortDate(e.date)}${e.time?' · '+e.time:''}</div>
+                </div>
               </div>
+              ${diff!==null?`<div style="display:flex;align-items:center;gap:2px;">
+                <span style="font-size:11px;font-weight:600;color:${diffColor};">${diffArrow} ${Math.abs(parseFloat(diff))} lb</span>
+              </div>`:'<span style="font-size:10px;color:var(--c5);">First</span>'}
             </div>
-            ${diff!==null?`<div style="display:flex;align-items:center;gap:2px;">
-              <span style="font-size:11px;font-weight:600;color:${diffColor};">${diffArrow} ${Math.abs(parseFloat(diff))} lb</span>
-            </div>`:'<span style="font-size:10px;color:var(--c5);">First</span>'}
+            <div class="bw-del-btn" style="display:none;position:absolute;right:0;top:0;bottom:0;width:80px;background:var(--rd);align-items:center;justify-content:center;z-index:0;">
+              <div class="bw-del-confirm" data-idx="${realIdx}" style="color:#fff;font-size:12px;font-weight:700;cursor:pointer;padding:10px;width:100%;text-align:center;">Delete</div>
+            </div>
           </div>`;
         }).join('')}
       </div>`;
@@ -939,28 +983,77 @@ function renderSplits(){
   const custom=all.filter(s=>s.custom);
   const templates=all.filter(s=>!s.custom);
   const rd=getRestDuration();
+
+  // Editing a specific split
+  if(state.editingSplit!==null&&state.editingSplit!==undefined){
+    const sp=all[state.editingSplit];
+    if(!sp)return`<div style="padding:20px;text-align:center;">Split not found</div>`;
+    return`<div style="padding:10px 16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div style="font-size:16px;font-weight:700;color:var(--c1);">Edit Split</div>
+        <div id="split-edit-cancel" style="font-size:11px;color:var(--c4);border:1px solid var(--bd);padding:6px 12px;border-radius:8px;cursor:pointer;">Cancel</div>
+      </div>
+      <div style="margin-bottom:12px;">
+        <div style="font-size:9px;letter-spacing:2px;color:var(--c4);margin-bottom:4px;">SPLIT NAME</div>
+        <input type="text" id="split-edit-name" value="${sp.name}" style="font-size:16px;"/>
+      </div>
+      <div style="font-size:9px;letter-spacing:2px;color:var(--c4);margin-bottom:6px;">EXERCISES</div>
+      <div style="background:var(--cd);border:1px solid var(--bd);border-radius:12px;overflow:hidden;margin-bottom:10px;">
+        ${sp.exercises.map((e,i)=>`<div style="padding:10px 12px;display:flex;align-items:center;${i<sp.exercises.length-1?'border-bottom:1px solid var(--bd)':''}">
+          <div style="display:flex;flex-direction:column;margin-right:8px;gap:2px;">
+            <div class="split-ex-up" data-i="${i}" style="cursor:pointer;font-size:10px;color:var(--c5);padding:2px;">▲</div>
+            <div class="split-ex-down" data-i="${i}" style="cursor:pointer;font-size:10px;color:var(--c5);padding:2px;">▼</div>
+          </div>
+          <div style="flex:1;font-size:13px;font-weight:500;color:var(--c2);">${e}</div>
+          <div class="split-ex-del" data-i="${i}" style="width:36px;height:36px;border-radius:8px;background:rgba(255,85,85,.06);display:flex;align-items:center;justify-content:center;cursor:pointer;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--rd)" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </div>
+        </div>`).join('')}
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:14px;">
+        <input type="text" id="split-add-ex-input" placeholder="Add exercise name" style="flex:1;font-size:14px;"/>
+        <div id="split-add-ex-btn" style="background:var(--bl);border-radius:10px;padding:12px 16px;font-size:12px;font-weight:700;color:#000;cursor:pointer;white-space:nowrap;display:flex;align-items:center;">+ Add</div>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <div id="split-edit-save" style="flex:1;background:var(--bl);border-radius:12px;padding:14px;text-align:center;font-size:13px;font-weight:700;color:#000;cursor:pointer;">Save Split</div>
+        <div id="split-edit-delete" style="flex:1;background:rgba(255,85,85,.06);border:1px solid rgba(255,85,85,.12);border-radius:12px;padding:14px;text-align:center;font-size:13px;color:var(--rd);cursor:pointer;">Delete</div>
+      </div>
+    </div>`;
+  }
+
   return`<div style="padding:10px 16px;">
+    <!-- Rest Timer Setting (prominent) -->
+    <div style="background:var(--cd);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div><div style="font-size:13px;font-weight:600;color:var(--c1);">Rest Timer</div><div style="font-size:10px;color:var(--c4);margin-top:1px;">Auto-starts after each set</div></div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div id="rd-sub" style="width:36px;height:36px;background:var(--ip);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--bl);font-size:18px;cursor:pointer;">−</div>
+          <span style="font-size:18px;font-weight:700;color:var(--bl);font-family:'DM Mono',monospace;min-width:44px;text-align:center;">${rd}s</span>
+          <div id="rd-add" style="width:36px;height:36px;background:var(--ip);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--bl);font-size:18px;cursor:pointer;">+</div>
+        </div>
+      </div>
+    </div>
     <div style="font-size:9px;color:var(--bl);letter-spacing:2px;font-weight:600;margin-bottom:6px;">YOUR SPLITS</div>
     <div style="background:var(--cd);border-radius:12px;overflow:hidden;border:1px solid var(--bd);margin-bottom:10px;">
-      ${custom.map((s,i)=>`<div style="padding:11px 12px;display:flex;justify-content:space-between;${i<custom.length-1?'border-bottom:1px solid var(--bd)':''}">
+      ${custom.map((s,i)=>{
+        const idx=all.indexOf(s);
+        return`<div class="split-tap" data-idx="${idx}" style="padding:12px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;${i<custom.length-1?'border-bottom:1px solid var(--bd)':''}">
         <div><div style="font-size:13px;font-weight:600;color:var(--c2);">${s.name}</div><div style="font-size:10px;color:var(--c5);">${s.exercises.length} exercises</div></div>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--c5)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
-      </div>`).join('')}
+      </div>`;}).join('')}
     </div>
     <div style="font-size:9px;color:var(--c4);letter-spacing:2px;font-weight:600;margin-bottom:6px;">TEMPLATES</div>
-    <div style="background:var(--cd);border-radius:12px;overflow:hidden;border:1px solid var(--bd);margin-bottom:12px;">
-      ${templates.slice(0,7).map((s,i)=>`<div style="padding:10px 12px;display:flex;justify-content:space-between;${i<6?'border-bottom:1px solid var(--bd)':''}">
+    <div style="background:var(--cd);border-radius:12px;overflow:hidden;border:1px solid var(--bd);margin-bottom:10px;">
+      ${templates.map((s,i)=>{
+        const idx=all.indexOf(s);
+        return`<div class="split-tap" data-idx="${idx}" style="padding:10px 12px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;${i<templates.length-1?'border-bottom:1px solid var(--bd)':''}">
         <span style="font-size:12px;color:var(--c3);">${s.name}</span><span style="font-size:10px;color:var(--c6);">${s.exercises.length} ex</span>
-      </div>`).join('')}
+      </div>`;}).join('')}
     </div>
-    <!-- Rest Timer Setting -->
-    <div style="display:flex;align-items:center;justify-content:center;gap:10px;padding-top:10px;border-top:1px solid var(--bd);">
-      <span style="font-size:11px;color:var(--c5);">Rest timer default</span>
-      <div style="display:flex;align-items:center;gap:5px;">
-        <div id="rd-sub" style="width:28px;height:28px;background:var(--ip);border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--bl);font-size:16px;cursor:pointer;">−</div>
-        <span style="font-size:15px;font-weight:700;color:var(--bl);font-family:'DM Mono',monospace;min-width:40px;text-align:center;">${rd}s</span>
-        <div id="rd-add" style="width:28px;height:28px;background:var(--ip);border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--bl);font-size:16px;cursor:pointer;">+</div>
-      </div>
+    <!-- Create New Split -->
+    <div style="display:flex;gap:6px;">
+      <input type="text" id="new-split-name" placeholder="New split name..." style="flex:1;font-size:14px;"/>
+      <div id="new-split-btn" style="background:var(--bl);border-radius:10px;padding:12px 16px;font-size:12px;font-weight:700;color:#000;cursor:pointer;white-space:nowrap;display:flex;align-items:center;">Create</div>
     </div>
   </div>`;
 }
@@ -1320,6 +1413,178 @@ function bindEvents(){
   if(rda)rda.onclick=()=>{LS.set('rd',getRestDuration()+15);render()};
   const rds=root.querySelector('#rd-sub');
   if(rds)rds.onclick=()=>{LS.set('rd',Math.max(15,getRestDuration()-15));render()};
+
+  // Split tap to edit
+  root.querySelectorAll('.split-tap').forEach(el=>{
+    el.onclick=()=>{state.editingSplit=parseInt(el.dataset.idx);render()};
+  });
+  // Split edit cancel
+  const sec=root.querySelector('#split-edit-cancel');
+  if(sec)sec.onclick=()=>{state.editingSplit=null;render()};
+  // Split edit save
+  const ses=root.querySelector('#split-edit-save');
+  if(ses)ses.onclick=()=>{
+    const all=getSplits();
+    const nameInput=root.querySelector('#split-edit-name');
+    if(nameInput&&all[state.editingSplit])all[state.editingSplit].name=nameInput.value;
+    LS.set('splits',all);state.editingSplit=null;render();
+  };
+  // Split edit delete
+  const sed=root.querySelector('#split-edit-delete');
+  if(sed)sed.onclick=()=>{
+    if(confirm('Delete this split?')){
+      const all=getSplits();all.splice(state.editingSplit,1);
+      LS.set('splits',all);state.editingSplit=null;render();
+    }
+  };
+  // Split exercise add
+  const sab=root.querySelector('#split-add-ex-btn');
+  if(sab)sab.onclick=()=>{
+    const inp=root.querySelector('#split-add-ex-input');
+    if(inp&&inp.value.trim()){
+      const all=getSplits();
+      if(all[state.editingSplit])all[state.editingSplit].exercises.push(inp.value.trim());
+      LS.set('splits',all);render();
+    }
+  };
+  // Split exercise delete
+  root.querySelectorAll('.split-ex-del').forEach(el=>{
+    el.onclick=(e)=>{
+      e.stopPropagation();
+      const all=getSplits();const i=parseInt(el.dataset.i);
+      if(all[state.editingSplit])all[state.editingSplit].exercises.splice(i,1);
+      LS.set('splits',all);render();
+    };
+  });
+  // Split exercise reorder
+  root.querySelectorAll('.split-ex-up').forEach(el=>{
+    el.onclick=(e)=>{
+      e.stopPropagation();const all=getSplits();const i=parseInt(el.dataset.i);
+      if(i>0&&all[state.editingSplit]){const exs=all[state.editingSplit].exercises;[exs[i-1],exs[i]]=[exs[i],exs[i-1]];LS.set('splits',all);render();}
+    };
+  });
+  root.querySelectorAll('.split-ex-down').forEach(el=>{
+    el.onclick=(e)=>{
+      e.stopPropagation();const all=getSplits();const i=parseInt(el.dataset.i);
+      const exs=all[state.editingSplit]?all[state.editingSplit].exercises:[];
+      if(i<exs.length-1){[exs[i],exs[i+1]]=[exs[i+1],exs[i]];LS.set('splits',all);render();}
+    };
+  });
+  // New split create
+  const nsb=root.querySelector('#new-split-btn');
+  if(nsb)nsb.onclick=()=>{
+    const inp=root.querySelector('#new-split-name');
+    if(inp&&inp.value.trim()){
+      const all=getSplits();all.push({name:inp.value.trim(),exercises:[],custom:true});
+      LS.set('splits',all);state.editingSplit=all.length-1;render();
+    }
+  };
+
+  // Abs add during workout
+  const aab=root.querySelector('#wk-add-abs');
+  if(aab)aab.onclick=()=>{
+    if(!state.activeWorkout)return;
+    const sel=root.querySelector('#abs-select');
+    let name=sel?sel.value:'';
+    if(name==='__custom'){name=prompt('Custom abs exercise name:');if(!name)return;}
+    if(!name)return;
+    const timed=['Plank','Dead Bug','Wall Sit','L-Sit Hold'].includes(name);
+    if(!state.activeWorkout.abs)state.activeWorkout.abs=[];
+    state.activeWorkout.abs.push({name,timed,sets:[{value:'',checked:false}]});
+    LS.set('aw',state.activeWorkout);render();
+  };
+  // Cardio add during workout
+  const cab=root.querySelector('#wk-add-cardio');
+  if(cab)cab.onclick=()=>{
+    if(!state.activeWorkout)return;
+    const sel=root.querySelector('#cardio-select');
+    let type=sel?sel.value:'';
+    if(type==='__custom'){type=prompt('Custom cardio name:');if(!type)return;}
+    if(!type)return;
+    if(!state.activeWorkout.cardio)state.activeWorkout.cardio=[];
+    state.activeWorkout.cardio.push({type,minutes:'',distance:'',calories:''});
+    LS.set('aw',state.activeWorkout);render();
+  };
+  // Abs remove
+  root.querySelectorAll('.abs-remove').forEach(el=>{
+    el.onclick=()=>{
+      if(!state.activeWorkout)return;
+      state.activeWorkout.abs.splice(parseInt(el.dataset.ai),1);
+      LS.set('aw',state.activeWorkout);render();
+    };
+  });
+  // Cardio remove
+  root.querySelectorAll('.cardio-remove').forEach(el=>{
+    el.onclick=()=>{
+      if(!state.activeWorkout)return;
+      state.activeWorkout.cardio.splice(parseInt(el.dataset.ci),1);
+      LS.set('aw',state.activeWorkout);render();
+    };
+  });
+  // Cardio field changes
+  root.querySelectorAll('.cardio-val').forEach(el=>{
+    el.onchange=()=>{
+      if(!state.activeWorkout)return;
+      const ci=parseInt(el.dataset.ci),f=el.dataset.field;
+      state.activeWorkout.cardio[ci][f]=el.value;
+      LS.set('aw',state.activeWorkout);
+    };
+  });
+  // Abs set value changes
+  root.querySelectorAll('.abs-val').forEach(el=>{
+    el.onchange=()=>{
+      if(!state.activeWorkout)return;
+      const ai=parseInt(el.dataset.ai),si=parseInt(el.dataset.si);
+      state.activeWorkout.abs[ai].sets[si].value=el.value;
+      LS.set('aw',state.activeWorkout);
+    };
+  });
+  // Abs set check
+  root.querySelectorAll('.abs-check').forEach(el=>{
+    el.onclick=()=>{
+      if(!state.activeWorkout)return;
+      const ai=parseInt(el.dataset.ai),si=parseInt(el.dataset.si);
+      state.activeWorkout.abs[ai].sets[si].checked=!state.activeWorkout.abs[ai].sets[si].checked;
+      LS.set('aw',state.activeWorkout);render();
+    };
+  });
+  // Abs add set
+  root.querySelectorAll('.abs-add-set').forEach(el=>{
+    el.onclick=()=>{
+      if(!state.activeWorkout)return;
+      const ai=parseInt(el.dataset.ai);
+      state.activeWorkout.abs[ai].sets.push({value:'',checked:false});
+      LS.set('aw',state.activeWorkout);render();
+    };
+  });
+
+  // Swipe-to-delete on weight entries
+  root.querySelectorAll('.bw-entry').forEach(el=>{
+    let startX=0,dx=0;
+    el.addEventListener('touchstart',(e)=>{startX=e.touches[0].clientX;dx=0;},{passive:true});
+    el.addEventListener('touchmove',(e)=>{
+      dx=e.touches[0].clientX-startX;
+      if(dx<0){el.style.transform='translateX('+Math.max(dx,-80)+'px)';el.style.transition='none';}
+    },{passive:true});
+    el.addEventListener('touchend',()=>{
+      if(dx<-60){
+        el.style.transition='transform .2s';el.style.transform='translateX(-80px)';
+        // Show delete button
+        const del=el.querySelector('.bw-del-btn');if(del)del.style.display='flex';
+      } else {
+        el.style.transition='transform .2s';el.style.transform='translateX(0)';
+        const del=el.querySelector('.bw-del-btn');if(del)del.style.display='none';
+      }
+    },{passive:true});
+  });
+  // Weight delete buttons
+  root.querySelectorAll('.bw-del-confirm').forEach(el=>{
+    el.onclick=()=>{
+      const idx=parseInt(el.dataset.idx);
+      const bw=getWeights();bw.splice(idx,1);LS.set('bw',bw);render();
+    };
+  });
+
 }
 
 // ===== WORKOUT ACTIONS =====
