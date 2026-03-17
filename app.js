@@ -142,7 +142,7 @@ function render(){
 
 // ===== ONBOARDING =====
 function renderOnboarding(){
-  return`<div style="flex:1;overflow-y:auto;padding:20px;text-align:center;">
+  return`<div class="scroll-area" style="padding:20px;text-align:center;">
     <div style="margin-top:16px;font-size:28px;font-weight:800;letter-spacing:4px;color:var(--c1);">RECOMP</div>
     <div style="font-size:9px;letter-spacing:3px;color:var(--c4);margin-top:2px;">ABSOLUTE FITNESS</div>
     <p style="font-size:14px;color:var(--c3);margin:22px 0 16px;">Set up your profile</p>
@@ -203,7 +203,7 @@ function renderMain(){
         </div>
       `}
     </div>
-    <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;position:relative;padding-bottom:56px;">
+    <div class="scroll-area" style="padding-bottom:calc(60px + env(safe-area-inset-bottom));">
       ${content}
       ${overlays}
     </div>
@@ -215,10 +215,10 @@ function renderMain(){
 function renderNav(){
   const tabs=['home','calendar','stats','me','splits'];
   const cur=state.tab==='workout'?'home':state.tab;
-  return`<div style="display:flex;padding:8px 10px 14px;border-top:1px solid var(--bd);background:var(--bg);flex-shrink:0;">
-    ${tabs.map(t=>`<div class="nav-tab" data-tab="${t}" style="flex:1;text-align:center;padding:4px 0;cursor:pointer;">
-      <div style="width:5px;height:5px;border-radius:50%;background:${cur===t?'var(--bl)':'transparent'};margin:0 auto 3px;"></div>
-      <div style="font-size:9px;letter-spacing:1px;color:${cur===t?'var(--bl)':'var(--c6)'};">${t==='calendar'?'CAL':t.toUpperCase()}</div>
+  return`<div style="display:flex;padding:8px 10px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--bd);background:var(--bg);flex-shrink:0;">
+    ${tabs.map(t=>`<div class="nav-tab" data-tab="${t}" style="flex:1;text-align:center;padding:8px 0;cursor:pointer;min-height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+      <div style="width:5px;height:5px;border-radius:50%;background:${cur===t?'var(--bl)':'transparent'};margin:0 auto 4px;"></div>
+      <div style="font-size:10px;letter-spacing:1px;color:${cur===t?'var(--bl)':'var(--c6)'};">${t==='calendar'?'CAL':t.toUpperCase()}</div>
     </div>`).join('')}
   </div>`;
 }
@@ -378,7 +378,7 @@ function renderExerciseCard(ex,ei){
         <div style="display:flex;align-items:center;gap:5px;"><span style="font-size:13px;font-weight:700;color:var(--c1);">${ex.name}</span>${arrow}</div>
         ${lastStr?`<div style="font-size:9px;color:var(--c5);font-family:'DM Mono',monospace;margin-top:2px;">Last: ${lastStr}</div>`:'<div style="font-size:9px;color:var(--c5);margin-top:2px;">First time — no history</div>'}
       </div>
-      <div class="ex-drill" data-name="${ex.name}" style="width:20px;height:20px;border-radius:5px;background:var(--ip);display:flex;align-items:center;justify-content:center;cursor:pointer;">
+      <div class="ex-drill" data-name="${ex.name}" style="width:36px;height:36px;border-radius:8px;background:var(--ip);display:flex;align-items:center;justify-content:center;cursor:pointer;">
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--c5)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
       </div>
     </div>
@@ -390,7 +390,7 @@ function renderExerciseCard(ex,ei){
         <span style="width:36px;font-size:10px;color:${s.type==='warmup'?'var(--gl)':'var(--c5)'};font-family:'DM Mono',monospace;">${s.type==='warmup'?'W':(ex.sets.filter((x,j)=>j<=si&&x.type!=='warmup').length)}</span>
         <div style="flex:1;margin-right:3px;"><input type="number" class="set-weight" data-ei="${ei}" data-si="${si}" value="${s.weight||''}" placeholder="-" style="font-size:12px;padding:6px;border-radius:6px;${s.type==='warmup'?'color:var(--gl);border:1px solid rgba(176,128,48,.15);':''}"/></div>
         <div style="flex:1;margin-right:3px;"><input type="number" class="set-reps" data-ei="${ei}" data-si="${si}" value="${s.reps||''}" placeholder="-" style="font-size:12px;padding:6px;border-radius:6px;${s.type==='warmup'?'color:var(--gl);border:1px solid rgba(176,128,48,.15);':''}"/></div>
-        <div class="set-check-btn" data-ei="${ei}" data-si="${si}" style="width:28px;height:28px;border-radius:7px;${s.checked?`background:${s.type==='warmup'?'rgba(176,128,48,.15)':'var(--bl)'}`:'background:var(--ip);border:1px solid var(--bd)'};display:flex;align-items:center;justify-content:center;cursor:pointer;">
+        <div class="set-check-btn" data-ei="${ei}" data-si="${si}" style="width:36px;height:36px;border-radius:8px;${s.checked?`background:${s.type==='warmup'?'rgba(176,128,48,.15)':'var(--bl)'}`:'background:var(--ip);border:1px solid var(--bd)'};display:flex;align-items:center;justify-content:center;cursor:pointer;">
           ${s.checked?`<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="${s.type==='warmup'?'var(--gl)':'#000'}" stroke-width="3"><path d="M5 12l5 5L19 7"/></svg>`:`<span style="font-size:12px;color:var(--c5);">○</span>`}
         </div>
       </div>
@@ -412,7 +412,7 @@ function renderAbsCard(ab,ai){
       <div style="display:flex;align-items:center;padding:3px 0;">
         <span style="width:36px;font-size:10px;color:var(--c5);font-family:'DM Mono',monospace;">${si+1}</span>
         <div style="flex:1;margin-right:3px;"><input type="number" value="${s.value||''}" placeholder="-" style="font-size:12px;padding:6px;border-radius:6px;"/></div>
-        <div style="width:28px;height:28px;border-radius:7px;${s.checked?'background:var(--bl)':'background:var(--ip);border:1px solid var(--bd)'};display:flex;align-items:center;justify-content:center;cursor:pointer;">
+        <div style="width:36px;height:36px;border-radius:8px;${s.checked?'background:var(--bl)':'background:var(--ip);border:1px solid var(--bd)'};display:flex;align-items:center;justify-content:center;cursor:pointer;">
           ${s.checked?'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3"><path d="M5 12l5 5L19 7"/></svg>':'<span style="font-size:12px;color:var(--c5);">○</span>'}
         </div>
       </div>
@@ -792,17 +792,102 @@ function renderMe(){
     <!-- Body Weight -->
     <div style="font-size:9px;color:var(--bl);letter-spacing:2px;font-weight:600;margin-bottom:5px;">BODY WEIGHT</div>
     <div style="background:var(--cd);border:1px solid var(--bd);border-radius:14px;padding:12px;margin-bottom:10px;">
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
-        <input type="number" id="bw-input" placeholder="Enter weight" style="flex:1;font-size:13px;padding:9px;border-radius:8px;"/>
+      <!-- Input row -->
+      <div style="display:flex;align-items:center;gap:5px;margin-bottom:8px;">
+        <input type="number" id="bw-input" placeholder="Enter weight" step="0.1" style="flex:1;font-size:13px;padding:9px;border-radius:8px;"/>
+        <div id="bw-scale-photo" style="background:var(--ip);border:1px solid var(--bd);border-radius:8px;padding:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--bl)" stroke-width="2"><rect x="2" y="6" width="20" height="14" rx="2"/><circle cx="12" cy="13" r="4"/><path d="M8 2h8l2 4H6l2-4"/></svg>
+        </div>
         <div id="bw-log" style="background:var(--bl);border-radius:8px;padding:9px 14px;font-size:12px;font-weight:700;color:#000;cursor:pointer;">Log</div>
+        <input type="file" accept="image/*" id="bw-photo-input" style="display:none;"/>
       </div>
-      ${latest?`<div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
-        <div><span style="font-size:17px;font-weight:700;color:var(--c1);">${latest.weight}</span><span style="font-size:10px;color:var(--c4);"> lb</span></div>
-        ${bw.length>=2?`<div style="display:flex;align-items:center;gap:2px;background:rgba(34,204,102,.08);padding:2px 6px;border-radius:4px;">
-          <span style="font-size:9px;font-weight:600;color:var(--gn);">${(parseFloat(bw[bw.length-1].weight)-parseFloat(bw[bw.length-2].weight)).toFixed(1)} lb</span>
-        </div>`:``}
-      </div>`:'<div style="font-size:12px;color:var(--c5);text-align:center;">No weigh-ins yet</div>'}
+      ${(()=>{
+        // 7-day trend graph
+        const allBw=getWeights();
+        if(allBw.length<2)return allBw.length===0?'<div style="font-size:12px;color:var(--c5);text-align:center;padding:8px;">No weigh-ins yet — log your first one above</div>':'';
+        // Group by date, get daily averages
+        const byDate={};
+        allBw.forEach(e=>{if(!byDate[e.date])byDate[e.date]=[];byDate[e.date].push(parseFloat(e.weight))});
+        const dates=Object.keys(byDate).sort().slice(-7);
+        if(dates.length<2)return'';
+        const avgs=dates.map(d=>{const ws=byDate[d];return{date:d,avg:ws.reduce((a,b)=>a+b,0)/ws.length}});
+        const weights=avgs.map(a=>a.avg);
+        const minW=Math.min(...weights)-1;
+        const maxW=Math.max(...weights)+1;
+        const range=maxW-minW||1;
+        const gw=260,gh=70,pad=5;
+        const pts=weights.map((wt,i)=>{
+          const x=pad+i*(gw-pad*2)/(weights.length-1);
+          const y=pad+(1-(wt-minW)/range)*(gh-pad*2);
+          return x+','+y;
+        });
+        // Trend direction
+        const first=weights[0],last=weights[weights.length-1];
+        const diff=(last-first).toFixed(1);
+        const trending=last<first?'down':last>first?'up':'flat';
+        const tColor=trending==='down'?'var(--gn)':trending==='up'?'var(--rd)':'var(--c5)';
+        const tArrow=trending==='down'?'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--gn)" stroke-width="3"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>':trending==='up'?'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--rd)" stroke-width="3"><path d="M12 19V5M5 12l7-7 7 7"/></svg>':'<span style="color:var(--c5);">—</span>';
+        return`
+          <div style="margin-bottom:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+              <span style="font-size:9px;color:var(--c5);letter-spacing:2px;">LAST 7 DAYS</span>
+              <div style="display:flex;align-items:center;gap:3px;background:${trending==='down'?'rgba(34,204,102,.08)':trending==='up'?'rgba(255,85,85,.08)':'rgba(150,150,150,.08)'};padding:2px 7px;border-radius:5px;">
+                ${tArrow}
+                <span style="font-size:10px;font-weight:600;color:${tColor};">${diff>0?'+':''}${diff} lb</span>
+              </div>
+            </div>
+            <svg viewBox="0 0 ${gw} ${gh}" style="width:100%;height:70px;" preserveAspectRatio="none">
+              <polyline points="${pts.join(' ')}" fill="none" stroke="var(--bl)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              ${weights.map((wt,i)=>{
+                const x=pad+i*(gw-pad*2)/(weights.length-1);
+                const y=pad+(1-(wt-minW)/range)*(gh-pad*2);
+                return'<circle cx="'+x+'" cy="'+y+'" r="3" fill="var(--bl)"/>';
+              }).join('')}
+            </svg>
+            <div style="display:flex;justify-content:space-between;font-size:8px;color:var(--c6);margin-top:2px;">
+              <span>${shortDate(dates[0])}</span><span>${shortDate(dates[dates.length-1])}</span>
+            </div>
+          </div>`;
+      })()}
+      ${(()=>{
+        // Latest reading
+        const allBw=getWeights();
+        if(!allBw.length)return'';
+        const latest=allBw[allBw.length-1];
+        return`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--bd);">
+          <div><span style="font-size:20px;font-weight:700;color:var(--c1);">${latest.weight}</span><span style="font-size:11px;color:var(--c4);"> lb</span></div>
+          <div style="font-size:10px;color:var(--c4);">Latest · ${shortDate(latest.date)}${latest.time?' '+latest.time:''}</div>
+        </div>`;
+      })()}
     </div>
+    <!-- Weight History Log -->
+    ${(()=>{
+      const allBw=getWeights();
+      if(allBw.length===0)return'';
+      const sorted=[...allBw].reverse().slice(0,15);
+      return`<div style="font-size:9px;color:var(--c5);letter-spacing:2px;font-weight:600;margin-bottom:5px;">WEIGH-IN HISTORY</div>
+      <div style="background:var(--cd);border:1px solid var(--bd);border-radius:14px;overflow:hidden;margin-bottom:10px;">
+        ${sorted.map((e,i)=>{
+          // Compare to previous entry
+          const prev=sorted[i+1];
+          const diff=prev?(parseFloat(e.weight)-parseFloat(prev.weight)).toFixed(1):null;
+          const diffColor=diff===null?'':parseFloat(diff)<0?'var(--gn)':parseFloat(diff)>0?'var(--rd)':'var(--c5)';
+          const diffArrow=diff===null?'':parseFloat(diff)<0?'↓':parseFloat(diff)>0?'↑':'—';
+          return`<div style="padding:10px 12px;display:flex;align-items:center;justify-content:space-between;${i<sorted.length-1?'border-bottom:1px solid var(--bd)':''}">
+            <div style="display:flex;align-items:center;gap:8px;">
+              ${e.photo?`<div style="width:32px;height:32px;border-radius:6px;overflow:hidden;flex-shrink:0;"><img src="${e.photo}" style="width:100%;height:100%;object-fit:cover;"/></div>`:''}
+              <div>
+                <div style="font-size:14px;font-weight:700;color:var(--c1);">${e.weight} <span style="font-size:10px;font-weight:400;color:var(--c4);">lb</span></div>
+                <div style="font-size:10px;color:var(--c5);">${shortDate(e.date)}${e.time?' · '+e.time:''}</div>
+              </div>
+            </div>
+            ${diff!==null?`<div style="display:flex;align-items:center;gap:2px;">
+              <span style="font-size:11px;font-weight:600;color:${diffColor};">${diffArrow} ${Math.abs(parseFloat(diff))} lb</span>
+            </div>`:'<span style="font-size:10px;color:var(--c5);">First</span>'}
+          </div>`;
+        }).join('')}
+      </div>`;
+    })()}
     <!-- Progress Photos -->
     <div style="font-size:9px;color:var(--bl);letter-spacing:2px;font-weight:600;margin-bottom:5px;">PROGRESS PHOTOS</div>
     <div style="background:var(--cd);border:1px solid var(--bd);border-radius:14px;padding:12px;margin-bottom:10px;">
@@ -1120,13 +1205,48 @@ function bindEvents(){
   if(dc)dc.onclick=()=>{state.drill=null;render()};
 
   // Body weight log
+  let pendingScalePhoto=null;
   const bwl=root.querySelector('#bw-log');
   if(bwl)bwl.onclick=()=>{
     const inp=root.querySelector('#bw-input');
     if(inp&&inp.value){
-      const bw=getWeights();bw.push({date:today(),weight:inp.value});LS.set('bw',bw);render();
+      const now=new Date();
+      const time=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+      const entry={date:today(),weight:inp.value,time:time};
+      if(pendingScalePhoto)entry.photo=pendingScalePhoto;
+      const bw=getWeights();bw.push(entry);LS.set('bw',bw);
+      pendingScalePhoto=null;
+      render();
     }
   };
+  // Scale photo button
+  const bwsp=root.querySelector('#bw-scale-photo');
+  const bwpi=root.querySelector('#bw-photo-input');
+  if(bwsp&&bwpi){
+    bwsp.onclick=()=>{bwpi.click()};
+    bwpi.onchange=(e)=>{
+      const file=e.target.files[0];
+      if(!file)return;
+      const reader=new FileReader();
+      reader.onload=(ev)=>{
+        const img=new Image();
+        img.onload=()=>{
+          const canvas=document.createElement('canvas');
+          const max=300;
+          let w=img.width,h=img.height;
+          if(w>h){h=h*(max/w);w=max;}else{w=w*(max/h);h=max;}
+          canvas.width=w;canvas.height=h;
+          canvas.getContext('2d').drawImage(img,0,0,w,h);
+          pendingScalePhoto=canvas.toDataURL('image/jpeg',0.6);
+          // Show visual feedback
+          bwsp.style.border='2px solid var(--gn)';
+          bwsp.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gn)" stroke-width="3"><path d="M5 12l5 5L19 7"/></svg>';
+        };
+        img.src=ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    };
+  }
 
   // Edit profile
   const ep=root.querySelector('#edit-profile');

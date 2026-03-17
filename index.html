@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover"/>
 <meta name="theme-color" content="#08090e"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
@@ -12,20 +12,61 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
 <title>RECOMP</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;overflow:hidden;font-family:'Outfit',system-ui,-apple-system,sans-serif}
-body{transition:background .3s,color .3s}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+html{height:100%;height:-webkit-fill-available}
+body{
+  min-height:100vh;min-height:100dvh;min-height:-webkit-fill-available;
+  overflow:hidden;font-family:'Outfit',system-ui,-apple-system,sans-serif;
+  transition:background .3s,color .3s;
+  padding-top:env(safe-area-inset-top);
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+}
 body.dark{--bg:#08090e;--cd:#0c1020;--ip:#12162a;--bd:#151a2e;--hd:#0e1225;--c1:#e0e4f0;--c2:#c8cee0;--c3:#6a7a9a;--c4:#3a4a6a;--c5:#2a3a5a;--c6:#1a2d5a;--dp:#080c1a;background:#08090e;color:#c8cee0}
 body.light{--bg:#f4f5f7;--cd:#fff;--ip:#f0f0f3;--bd:#e4e4e8;--hd:#fff;--c1:#1a1a2e;--c2:#333;--c3:#666;--c4:#999;--c5:#bbb;--c6:#ddd;--dp:#e8e8ec;background:#f4f5f7;color:#333}
-:root{--bl:#4a8fff;--gn:#22cc66;--rd:#ff5555;--gl:#b08030;--fi:#ff9933;--pu:#8a6fff}
-#root{height:100%;display:flex;flex-direction:column;max-width:480px;margin:0 auto;position:relative;overflow:hidden}
-input[type=number]{-moz-appearance:textfield;font-family:'DM Mono',monospace;background:var(--ip);border:1px solid var(--bd);border-radius:6px;padding:6px;text-align:center;font-size:12px;color:var(--c2);width:100%;outline:none}
+:root{--bl:#4a8fff;--gn:#22cc66;--rd:#ff5555;--gl:#b08030;--fi:#ff9933;--pu:#8a6fff;--safe-bottom:env(safe-area-inset-bottom)}
+/* Full width on mobile, capped on tablet/desktop */
+#root{
+  height:100vh;height:100dvh;height:-webkit-fill-available;
+  display:flex;flex-direction:column;
+  max-width:480px;margin:0 auto;
+  position:relative;overflow:hidden;
+  width:100%;
+}
+/* Inputs - 16px minimum to prevent iOS zoom */
+input[type=number]{
+  -moz-appearance:textfield;font-family:'DM Mono',monospace;
+  background:var(--ip);border:1px solid var(--bd);border-radius:8px;
+  padding:10px;text-align:center;font-size:16px;color:var(--c2);
+  width:100%;outline:none;min-height:44px;
+}
 input[type=number]:focus{border-color:var(--bl)}
 input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none}
-input[type=text],input[type=number],textarea{font-family:inherit;background:var(--ip);border:1px solid var(--bd);border-radius:10px;padding:11px 14px;font-size:14px;color:var(--c2);width:100%;outline:none}
+input[type=text],input[type=number],textarea{
+  font-family:inherit;background:var(--ip);border:1px solid var(--bd);
+  border-radius:10px;padding:12px 14px;font-size:16px;color:var(--c2);
+  width:100%;outline:none;min-height:44px;
+}
 input[type=text]:focus,textarea:focus{border-color:var(--bl)}
+input::placeholder{color:var(--c5)}
 textarea{resize:none;min-height:60px}
-select{font-family:inherit;background:var(--ip);border:1px solid var(--bd);border-radius:10px;padding:10px;font-size:13px;color:var(--c2);width:100%;outline:none;-webkit-appearance:none;appearance:none}
+textarea::placeholder{color:var(--c5)}
+select{
+  font-family:inherit;background:var(--ip);border:1px solid var(--bd);
+  border-radius:10px;padding:12px;font-size:16px;color:var(--c2);
+  width:100%;outline:none;-webkit-appearance:none;appearance:none;min-height:44px;
+}
+/* Ensure all tappable elements are at least 44px */
+button,[role=button]{min-height:44px;min-width:44px}
+/* Smooth scrolling with momentum */
+.scroll-area{
+  flex:1;overflow-y:auto;overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-y:contain;
+  position:relative;
+}
+/* Hide scrollbar on mobile but keep functionality */
+.scroll-area::-webkit-scrollbar{display:none}
+.scroll-area{-ms-overflow-style:none;scrollbar-width:none}
 </style>
 </head>
 <body class="dark">
