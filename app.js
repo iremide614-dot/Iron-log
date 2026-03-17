@@ -134,11 +134,16 @@ function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2
 function render(){
   const root=document.getElementById('root');
   if(!root)return;
-  let h='';
-  if(state.screen==='onboarding'){h=renderOnboarding();}
-  else{h=renderMain();}
-  root.innerHTML=h;
-  bindEvents();
+  try{
+    let h='';
+    if(state.screen==='onboarding'){h=renderOnboarding();}
+    else{h=renderMain();}
+    root.innerHTML=h;
+    bindEvents();
+  }catch(e){
+    root.innerHTML='<div style="padding:20px;color:red;font-size:12px;">Error: '+e.message+'<br><br>Tab: '+state.tab+'<br>Screen: '+state.screen+'<br><br><div onclick="localStorage.clear();location.reload()" style="background:#333;color:#fff;padding:10px;border-radius:8px;margin-top:10px;cursor:pointer;">Reset App</div></div>';
+    console.error('Render error:',e);
+  }
 }
 
 // ===== ONBOARDING =====
@@ -965,11 +970,11 @@ function renderMe(){
       if(!dates.length)return'';
       return`<div style="font-size:9px;color:var(--c5);letter-spacing:2px;font-weight:600;margin-bottom:5px;">PHOTO TIMELINE</div>
       ${dates.map(d=>{
-        const p=photos[d];
+        const ph=photos[d];
         return`<div style="background:var(--cd);border:1px solid var(--bd);border-radius:10px;padding:10px;margin-bottom:6px;">
           <div style="font-size:10px;color:var(--c4);margin-bottom:6px;">${shortDate(d)}</div>
           <div style="display:flex;gap:4px;">
-            ${['front','side','back'].map(t=>p[t]?`<div style="flex:1;aspect-ratio:3/4;border-radius:6px;overflow:hidden;"><img src="${p[t]}" style="width:100%;height:100%;object-fit:cover;"/></div>`:`<div style="flex:1;aspect-ratio:3/4;background:var(--ip);border-radius:6px;"></div>`).join('')}
+            ${['front','side','back'].map(t=>ph[t]?`<div style="flex:1;aspect-ratio:3/4;border-radius:6px;overflow:hidden;"><img src="${ph[t]}" style="width:100%;height:100%;object-fit:cover;"/></div>`:`<div style="flex:1;aspect-ratio:3/4;background:var(--ip);border-radius:6px;"></div>`).join('')}
           </div>
         </div>`;
       }).join('')}`;
@@ -1065,7 +1070,7 @@ function bindEvents(){
 
   // Logo -> Home
   const logo=root.querySelector('#nav-logo');
-  if(logo)logo.onclick=()=>{state.tab='home';state.dropdown=false;state.preview=null;render()};
+  if(logo)logo.onclick=()=>{state.tab='home';state.dropdown=false;state.preview=null;state.editing=false;state.editingSplit=null;state.editingProfile=false;state.drill=null;state.restDayPicker=false;state.summary=null;render()};
 
   // Theme toggle
   const tt=root.querySelector('#theme-toggle');
@@ -1073,7 +1078,7 @@ function bindEvents(){
 
   // Nav tabs
   root.querySelectorAll('.nav-tab').forEach(el=>{
-    el.onclick=()=>{state.tab=el.dataset.tab;state.dropdown=false;state.preview=null;state.editing=false;state.futurePlan=false;state.drill=null;render()};
+    el.onclick=()=>{state.tab=el.dataset.tab;state.dropdown=false;state.preview=null;state.editing=false;state.futurePlan=false;state.drill=null;state.editingSplit=null;state.editingProfile=false;state.restDayPicker=false;state.summary=null;state.restTimer=false;render()};
   });
 
   // Onboarding
