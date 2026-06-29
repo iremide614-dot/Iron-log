@@ -5,5 +5,10 @@
 [build]
   command = "npm run build"
 
+# Next.js 16 needs Node 20+. The old static site may default to an older
+# version, which would fail the build — pin a supported one.
+[build.environment]
+  NODE_VERSION = "20"
+
 [[plugins]]
   package = "@netlify/plugin-nextjs"
