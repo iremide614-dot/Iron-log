@@ -1,20 +1,36 @@
-# RECOMP — Workout Tracker
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-Built for Absolute Recomp. Track weights, reps, progress photos, and personal records.
+## Getting Started
 
-## Features
+First, run the development server:
 
-- **Custom splits** — 12+ pre-built splits (PPL, Upper/Lower, Full Body, Bro Split + your originals), fully editable
-- **Smart weight memory** — auto-fills your last session's weights
-- **Rest timer** — auto-starts between sets with vibration alert
-- **Progressive overload tracking** — arrows show if you're lifting more or less than last time
-- **Calendar view** — browse any past workout by date
-- **Progress photos** — front, side, and back poses with timeline history
-- **Body weight log** — daily weigh-ins with trend chart
-- **Workout notes** — log how you felt each session
-- **Personal records** — auto-tracked PRs with averages per exercise
-- **Installable PWA** — works like a native app on your phone
-- **Offline support** — works without internet
-- **100% free** — no database, no server, no subscriptions
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
 
-## Cost: $0/month forever
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

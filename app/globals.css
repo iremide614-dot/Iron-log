@@ -1,0 +1,188 @@
+@import "tailwindcss";
+
+/* ===== RECOMP design tokens (ported from original PWA) ===== */
+:root {
+  --bl: #4a8fff;
+  --gn: #22cc66;
+  --rd: #ff5555;
+  --gl: #b08030;
+  --fi: #ff9933;
+  --pu: #8a6fff;
+}
+
+body.dark {
+  --bg: #08090e;
+  --cd: #0c1020;
+  --ip: #12162a;
+  --bd: #151a2e;
+  --hd: #0e1225;
+  --c1: #e0e4f0;
+  --c2: #c8cee0;
+  --c3: #6a7a9a;
+  --c4: #3a4a6a;
+  --c5: #2a3a5a;
+  --c6: #1a2d5a;
+  --dp: #080c1a;
+  background: #08090e;
+  color: #c8cee0;
+}
+
+body.light {
+  --bg: #f4f5f7;
+  --cd: #fff;
+  --ip: #f0f0f3;
+  --bd: #e4e4e8;
+  --hd: #fff;
+  --c1: #1a1a2e;
+  --c2: #333;
+  --c3: #666;
+  --c4: #999;
+  --c5: #bbb;
+  --c6: #ddd;
+  --dp: #e8e8ec;
+  background: #f4f5f7;
+  color: #333;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-cd: var(--cd);
+  --color-ip: var(--ip);
+  --color-bd: var(--bd);
+  --color-hd: var(--hd);
+  --color-c1: var(--c1);
+  --color-c2: var(--c2);
+  --color-c3: var(--c3);
+  --color-c4: var(--c4);
+  --color-c5: var(--c5);
+  --color-c6: var(--c6);
+  --color-dp: var(--dp);
+  --color-bl: var(--bl);
+  --color-gn: var(--gn);
+  --color-rd: var(--rd);
+  --color-gl: var(--gl);
+  --color-fi: var(--fi);
+  --color-pu: var(--pu);
+  --font-sans: var(--font-outfit);
+  --font-mono: var(--font-dm-mono);
+}
+
+/* ===== base reset & mobile shell (ported) ===== */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+html {
+  height: 100%;
+  height: -webkit-fill-available;
+}
+
+body {
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-outfit), system-ui, -apple-system, sans-serif;
+  transition: background 0.3s, color 0.3s;
+  padding-top: env(safe-area-inset-top);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* App is a centered 480px mobile column that fills the viewport height */
+#root-shell {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  max-width: 480px;
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+}
+
+.scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  position: relative;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scroll-area::-webkit-scrollbar {
+  display: none;
+}
+
+/* form controls (ported) */
+input[type="number"] {
+  -moz-appearance: textfield;
+  font-family: var(--font-dm-mono), monospace;
+  background: var(--ip);
+  border: 1px solid var(--bd);
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+  font-size: 16px;
+  color: var(--c2);
+  width: 100%;
+  outline: none;
+  min-height: 44px;
+}
+input[type="number"]:focus {
+  border-color: var(--bl);
+}
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
+input[type="text"],
+input[type="email"],
+input[type="password"],
+textarea {
+  font-family: inherit;
+  background: var(--ip);
+  border: 1px solid var(--bd);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 16px;
+  color: var(--c2);
+  width: 100%;
+  outline: none;
+  min-height: 44px;
+}
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+textarea:focus {
+  border-color: var(--bl);
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--c5);
+}
+textarea {
+  resize: none;
+  min-height: 60px;
+}
+select {
+  font-family: inherit;
+  background: var(--ip);
+  border: 1px solid var(--bd);
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 16px;
+  color: var(--c2);
+  width: 100%;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  min-height: 44px;
+}

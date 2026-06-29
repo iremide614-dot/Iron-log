@@ -1,0 +1,9 @@
+# Netlify build config for the RECOMP Next.js app.
+# The Next.js Runtime plugin turns app/api/* into serverless functions
+# (so the Gemini key stays server-side) and handles SSR + static assets.
+
+[build]
+  command = "npm run build"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
