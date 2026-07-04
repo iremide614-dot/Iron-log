@@ -194,7 +194,7 @@ export function ActiveWorkout({ go }: { go: (t: Tab) => void }) {
                     />
                     <button
                       onClick={() => toggleSet(ex.id, set.id, set.checked)}
-                      className="w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold shrink-0"
+                      className="w-11 h-11 rounded-lg flex items-center justify-center text-sm font-bold shrink-0"
                       style={{
                         background: set.checked ? "var(--gn)" : "var(--ip)",
                         color: set.checked ? "#000" : "var(--c5)",
@@ -205,7 +205,7 @@ export function ActiveWorkout({ go }: { go: (t: Tab) => void }) {
                     </button>
                     <button
                       onClick={() => removeSet(ex.id, set.id)}
-                      className="text-xs px-1 shrink-0"
+                      className="text-xs px-2 py-3 shrink-0"
                       style={{ color: "var(--c5)" }}
                     >
                       −

@@ -67,7 +67,10 @@ body.light {
   --font-mono: var(--font-dm-mono);
 }
 
-/* ===== base reset & mobile shell (ported) ===== */
+/* ===== base reset & mobile shell (ported) =====
+   Wrapped in @layer base so Tailwind utilities (@layer utilities)
+   override these — unlayered rules would always beat layered ones. */
+@layer base {
 * {
   box-sizing: border-box;
   margin: 0;
@@ -186,3 +189,4 @@ select {
   appearance: none;
   min-height: 44px;
 }
+} /* end @layer base */

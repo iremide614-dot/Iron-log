@@ -57,6 +57,7 @@ function Shell() {
               style={{
                 color: tab === n.id ? "var(--bl)" : "var(--c6)",
                 fontWeight: tab === n.id ? 700 : 500,
+                minHeight: 48,
               }}
             >
               {n.label}
@@ -66,7 +67,7 @@ function Shell() {
             <button
               onClick={() => setTab("workout")}
               className="flex-1 py-3 text-[10px] tracking-[1px] font-bold"
-              style={{ color: "var(--gn)" }}
+              style={{ color: "var(--gn)", minHeight: 48 }}
             >
               ● LIVE
             </button>
