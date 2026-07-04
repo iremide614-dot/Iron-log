@@ -4,6 +4,7 @@
 
 [build]
   command = "npm run build"
+  publish = ".next"
 
 # Next.js 16 needs Node 20+. The old static site may default to an older
 # version, which would fail the build — pin a supported one.
