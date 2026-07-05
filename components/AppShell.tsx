@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { StoreProvider, useStore } from "@/lib/store";
 import { Home } from "./screens/Home";
 import { ActiveWorkout } from "./screens/ActiveWorkout";
@@ -20,6 +20,13 @@ const NAV: { id: Tab; label: string }[] = [
 function Shell() {
   const { ready, active } = useStore();
   const [tab, setTab] = useState<Tab>("home");
+
+  // service worker: PWA install + push notifications
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+  }, []);
 
   if (!ready) {
     return (

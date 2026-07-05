@@ -22,12 +22,13 @@ Respond with ONLY compact JSON, no markdown, in exactly this shape:
 - calories: kcal for that item's visible portion; protein/carbs/fat: grams for that portion
 List every identifiable component separately — sauces and sides too, when visible. If you cannot identify any food, return name "Unknown" with one best-guess item.`;
 
-const TEXT_PROMPT = `You are a nutrition estimator. The user describes food in words. Estimate nutrition for a TYPICAL portion of each distinct food described (assume common serving sizes unless quantities are given).
+const TEXT_PROMPT = `You are a nutrition estimator. The user describes food in words. Estimate nutrition for each distinct food described.
+PORTIONS: honor any quantity or portion size EXACTLY as written — "2 eggs" means two eggs (double one egg), "5 oz turkey sausage" means exactly 5 ounces, "2 slices of bacon" means two slices, "half a cup of rice" means half a cup. Only when no quantity is given, assume one typical serving.
 Respond with ONLY compact JSON, no markdown, in exactly this shape:
 {"name": string, "items": [{"name": string, "calories": number, "protein": number, "carbs": number, "fat": number}]}
 - name: a short overall name for what was described
-- items: one entry per distinct food mentioned
-- calories: kcal for the portion; protein/carbs/fat: grams for the portion
+- items: one entry per distinct food mentioned; include the portion in the item name (e.g. "2 eggs", "5 oz turkey sausage")
+- calories: kcal for the stated portion; protein/carbs/fat: grams for the stated portion
 Food description: `;
 
 function clampNum(v: unknown, fallback = 0): number {

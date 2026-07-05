@@ -13,3 +13,7 @@
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+
+# Scheduled reminder function (netlify/functions/reminders.mts)
+[functions]
+  node_bundler = "esbuild"

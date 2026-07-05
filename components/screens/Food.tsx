@@ -352,7 +352,7 @@ export function Food() {
                 <div className="flex items-center gap-2 mb-2">
                   <input
                     type="text"
-                    placeholder="Food name"
+                    placeholder={'e.g. "2 eggs" or "5 oz sausage"'}
                     value={it.name}
                     onChange={(e) => patchItem(it.id, { name: e.target.value })}
                     onKeyDown={(e) => e.key === "Enter" && estimateItem(it)}

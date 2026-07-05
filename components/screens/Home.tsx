@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useStore } from "@/lib/store";
 import { streak } from "@/lib/workouts";
 import { shortDate, fmtDuration } from "@/lib/format";
+import { Reminders } from "../Reminders";
 import type { Tab } from "../AppShell";
 
 export function Home({ go }: { go: (t: Tab) => void }) {
@@ -136,6 +137,9 @@ export function Home({ go }: { go: (t: Tab) => void }) {
           </div>
         </div>
       )}
+
+      {/* reminders */}
+      <Reminders />
 
       {/* recent */}
       <div className="text-[10px] font-semibold tracking-[2px] mb-2" style={{ color: "var(--c4)" }}>
