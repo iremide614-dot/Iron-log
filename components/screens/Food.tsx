@@ -3,11 +3,20 @@
 import { useMemo, useRef, useState } from "react";
 import { useStore } from "@/lib/store";
 import { analyzeFood, fileToDataURL, makeThumb, sumMacros } from "@/lib/food";
-import { dateStr, fmtDate, today } from "@/lib/format";
-import type { FoodAnalysis } from "@/lib/types";
+import { dateStr, fmtDate, today, uid } from "@/lib/format";
+import type { FoodItem } from "@/lib/types";
 
-type Draft = FoodAnalysis & { thumb?: string };
+type Draft = {
+  name: string;
+  items: FoodItem[];
+  thumb?: string;
+  mock?: boolean;
+};
 type Stage = "idle" | "analyzing" | "review";
+
+function blankItem(): FoodItem {
+  return { id: uid(), name: "", calories: 0, protein: 0, carbs: 0, fat: 0 };
+}
 
 export function Food() {
   const { food, addFood, deleteFood } = useStore();
@@ -22,6 +31,7 @@ export function Food() {
     [food, date]
   );
   const totals = sumMacros(dayEntries);
+  const draftTotals = draft ? sumMacros(draft.items) : null;
 
   function shiftDay(delta: number) {
     const d = new Date(date + "T12:00:00");
@@ -35,20 +45,26 @@ export function Food() {
     try {
       const dataURL = await fileToDataURL(file);
       const thumb = await makeThumb(dataURL);
-      setDraft({ name: "", calories: 0, protein: 0, carbs: 0, fat: 0, thumb });
+      setDraft({ name: "", items: [], thumb });
       setStage("analyzing");
       const result = await analyzeFood(dataURL);
-      setDraft({ ...result, thumb });
+      setDraft({
+        name: result.name,
+        items: result.items.map((it) => ({ ...it, id: uid() })),
+        thumb,
+        mock: result.mock,
+      });
       setStage("review");
     } catch {
       setError("Couldn't analyze that photo — enter the details manually.");
+      setDraft((d) => ({ name: "", items: [blankItem()], thumb: d?.thumb }));
       setStage("review");
     }
   }
 
   function startManual() {
     setError(null);
-    setDraft({ name: "", calories: 0, protein: 0, carbs: 0, fat: 0 });
+    setDraft({ name: "", items: [blankItem()] });
     setStage("review");
   }
 
@@ -59,15 +75,36 @@ export function Food() {
     if (fileRef.current) fileRef.current.value = "";
   }
 
+  function patchItem(id: string, patch: Partial<FoodItem>) {
+    setDraft((d) =>
+      d
+        ? { ...d, items: d.items.map((it) => (it.id === id ? { ...it, ...patch } : it)) }
+        : d
+    );
+  }
+
+  function removeItem(id: string) {
+    setDraft((d) => (d ? { ...d, items: d.items.filter((it) => it.id !== id) } : d));
+  }
+
+  function addItem() {
+    setDraft((d) => (d ? { ...d, items: [...d.items, blankItem()] } : d));
+  }
+
   function save() {
     if (!draft) return;
+    const items = draft.items
+      .map((it) => ({ ...it, name: it.name.trim() }))
+      .filter((it) => it.name || it.calories > 0);
+    const t = sumMacros(items);
     addFood({
       date,
-      name: draft.name.trim() || "Meal",
-      calories: draft.calories,
-      protein: draft.protein,
-      carbs: draft.carbs,
-      fat: draft.fat,
+      name: draft.name.trim() || items.map((i) => i.name).filter(Boolean).join(", ") || "Meal",
+      items: items.length ? items : undefined,
+      calories: t.calories,
+      protein: t.protein,
+      carbs: t.carbs,
+      fat: t.fat,
       thumb: draft.thumb,
     });
     reset();
@@ -181,24 +218,83 @@ export function Food() {
               {error}
             </div>
           )}
+
           <input
             type="text"
-            placeholder="Food name"
+            placeholder="Meal name"
             value={draft.name}
             onChange={(e) => setDraft({ ...draft, name: e.target.value })}
             className="mb-3"
           />
-          <div className="grid grid-cols-2 gap-2 mb-3">
-            <Field label="Calories" value={draft.calories} onChange={(v) => setDraft({ ...draft, calories: v })} />
-            <Field label="Protein (g)" value={draft.protein} onChange={(v) => setDraft({ ...draft, protein: v })} />
-            <Field label="Carbs (g)" value={draft.carbs} onChange={(v) => setDraft({ ...draft, carbs: v })} />
-            <Field label="Fat (g)" value={draft.fat} onChange={(v) => setDraft({ ...draft, fat: v })} />
+
+          {/* detected items — each editable */}
+          <div className="text-[10px] font-semibold tracking-[2px] mb-2" style={{ color: "var(--c4)" }}>
+            DETECTED ITEMS · {draft.items.length}
           </div>
+          <div className="flex flex-col gap-2 mb-2">
+            {draft.items.map((it) => (
+              <div
+                key={it.id}
+                className="rounded-xl p-3"
+                style={{ background: "var(--ip)", border: "1px solid var(--bd)" }}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <input
+                    type="text"
+                    placeholder="Food name"
+                    value={it.name}
+                    onChange={(e) => patchItem(it.id, { name: e.target.value })}
+                    style={{ background: "var(--cd)" }}
+                  />
+                  <button
+                    onClick={() => removeItem(it.id)}
+                    className="px-2 py-3 shrink-0 text-sm"
+                    style={{ color: "var(--c4)" }}
+                    aria-label={`Remove ${it.name || "item"}`}
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="grid grid-cols-4 gap-1.5">
+                  <ItemField label="kcal" value={it.calories} onChange={(v) => patchItem(it.id, { calories: v })} />
+                  <ItemField label="P (g)" value={it.protein} onChange={(v) => patchItem(it.id, { protein: v })} />
+                  <ItemField label="C (g)" value={it.carbs} onChange={(v) => patchItem(it.id, { carbs: v })} />
+                  <ItemField label="F (g)" value={it.fat} onChange={(v) => patchItem(it.id, { fat: v })} />
+                </div>
+              </div>
+            ))}
+          </div>
+          <button onClick={addItem} className="text-xs font-semibold mb-3" style={{ color: "var(--bl)" }}>
+            + Add item
+          </button>
+
+          {/* live totals for the meal */}
+          {draftTotals && (
+            <div
+              className="rounded-xl px-3 py-2 mb-3 flex items-center justify-between"
+              style={{ background: "var(--dp)", border: "1px solid var(--bd)" }}
+            >
+              <span className="text-xs font-semibold" style={{ color: "var(--c3)" }}>
+                Meal total
+              </span>
+              <span
+                className="text-xs font-bold"
+                style={{ color: "var(--c1)", fontFamily: "var(--font-dm-mono)" }}
+              >
+                {draftTotals.calories} kcal · P{draftTotals.protein} C{draftTotals.carbs} F{draftTotals.fat}
+              </span>
+            </div>
+          )}
+
           <div className="flex gap-2">
             <button
               onClick={save}
+              disabled={draft.items.length === 0}
               className="flex-1 text-sm font-bold py-3 rounded-xl"
-              style={{ background: "var(--gn)", color: "#000" }}
+              style={{
+                background: draft.items.length ? "var(--gn)" : "var(--ip)",
+                color: draft.items.length ? "#000" : "var(--c4)",
+              }}
             >
               Add to diary
             </button>
@@ -246,6 +342,11 @@ export function Food() {
                 <div className="text-[10px]" style={{ color: "var(--c4)" }}>
                   {f.calories} kcal · P{f.protein} C{f.carbs} F{f.fat}
                 </div>
+                {f.items && f.items.length > 0 && (
+                  <div className="text-[10px] truncate" style={{ color: "var(--c5)" }}>
+                    {f.items.map((i) => i.name).join(" · ")}
+                  </div>
+                )}
               </div>
               <button
                 onClick={() => deleteFood(f.id)}
@@ -275,7 +376,7 @@ function Macro({ label, value, color }: { label: string; value: number; color: s
   );
 }
 
-function Field({
+function ItemField({
   label,
   value,
   onChange,
@@ -286,7 +387,7 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="text-[10px] block mb-1" style={{ color: "var(--c4)" }}>
+      <span className="text-[9px] block mb-0.5 text-center" style={{ color: "var(--c4)" }}>
         {label}
       </span>
       <input
@@ -295,6 +396,7 @@ function Field({
         value={value === 0 ? "" : value}
         placeholder="0"
         onChange={(e) => onChange(parseInt(e.target.value) || 0)}
+        style={{ background: "var(--cd)", padding: "8px 4px", minHeight: 40, fontSize: 14 }}
       />
     </label>
   );

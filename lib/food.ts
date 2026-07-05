@@ -1,6 +1,6 @@
 "use client";
 
-import type { FoodAnalysis, FoodEntry, Macros } from "./types";
+import type { FoodAnalysis, Macros } from "./types";
 
 /** Read a File into a data URL. */
 export function fileToDataURL(file: File): Promise<string> {
@@ -48,7 +48,8 @@ export async function analyzeFood(dataURL: string): Promise<FoodAnalysis> {
   return res.json();
 }
 
-export function sumMacros(entries: FoodEntry[]): Macros {
+/** Sum any list of macro-bearing things (diary entries, meal items…). */
+export function sumMacros(entries: Macros[]): Macros {
   return entries.reduce<Macros>(
     (a, e) => ({
       calories: a.calories + e.calories,

@@ -48,9 +48,16 @@ export type Macros = {
   fat: number; // grams
 };
 
-/** What the AI (or mock) returns for a photo. */
-export type FoodAnalysis = Macros & {
+/** One detected food within a meal. */
+export type FoodItem = Macros & {
+  id: string;
   name: string;
+};
+
+/** What the AI (or mock) returns for a photo: an itemized breakdown. */
+export type FoodAnalysis = {
+  name: string;
+  items: (Macros & { name: string })[];
   /** true when produced by the local mock (no API key configured) */
   mock?: boolean;
 };
@@ -59,6 +66,8 @@ export type FoodEntry = Macros & {
   id: string;
   date: string; // YYYY-MM-DD
   name: string;
+  /** itemized breakdown (entries saved before this feature won't have it) */
+  items?: FoodItem[];
   thumb?: string; // small base64 jpeg thumbnail
   createdAt: number;
 };
