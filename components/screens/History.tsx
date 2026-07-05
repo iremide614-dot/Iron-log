@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { workingSets, calcVolume, countSets } from "@/lib/workouts";
 import { sumMacros } from "@/lib/food";
-import { dateStr, fmtDate, fmtDuration, fmtVol, shortDate } from "@/lib/format";
+import { dateStr, fmtDate, fmtDuration, fmtVol, shortDate, today } from "@/lib/format";
 import type { Workout, FoodEntry } from "@/lib/types";
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -14,7 +14,7 @@ export function History() {
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth());
   const [year, setYear] = useState(now.getFullYear());
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(today());
 
   const workoutsByDate = useMemo(() => {
     const m: Record<string, Workout[]> = {};

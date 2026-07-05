@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { useStore } from "@/lib/store";
-import { analyzeFood, fileToDataURL, makeThumb, sumMacros } from "@/lib/food";
+import { analyzeFood, estimateFoodFromText, fileToDataURL, makeThumb, sumMacros } from "@/lib/food";
 import { dateStr, fmtDate, today, uid } from "@/lib/format";
 import type { FoodItem } from "@/lib/types";
 
@@ -24,6 +24,7 @@ export function Food() {
   const [stage, setStage] = useState<Stage>("idle");
   const [draft, setDraft] = useState<Draft | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [estimatingId, setEstimatingId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const dayEntries = useMemo(
@@ -122,6 +123,35 @@ export function Food() {
 
   function addItem() {
     setDraft((d) => (d ? { ...d, items: [...d.items, blankItem()] } : d));
+  }
+
+  /** AI-estimate macros for an item from its typed name — no manual numbers needed. */
+  async function estimateItem(it: FoodItem) {
+    const query = it.name.trim();
+    if (!query || estimatingId) return;
+    setError(null);
+    setEstimatingId(it.id);
+    try {
+      const r = await estimateFoodFromText(query);
+      const replacements: FoodItem[] = (r.items.length
+        ? r.items
+        : [{ name: query, calories: 0, protein: 0, carbs: 0, fat: 0 }]
+      ).map((x) => ({ ...x, id: uid() }));
+      setDraft((d) =>
+        d
+          ? {
+              ...d,
+              mock: d.mock || r.mock,
+              // the item may expand into several (e.g. "burger and fries")
+              items: d.items.flatMap((x) => (x.id === it.id ? replacements : [x])),
+            }
+          : d
+      );
+    } catch {
+      setError("Couldn't estimate that — check the name or fill it in manually.");
+    } finally {
+      setEstimatingId(null);
+    }
   }
 
   function save() {
@@ -325,8 +355,22 @@ export function Food() {
                     placeholder="Food name"
                     value={it.name}
                     onChange={(e) => patchItem(it.id, { name: e.target.value })}
+                    onKeyDown={(e) => e.key === "Enter" && estimateItem(it)}
                     style={{ background: "var(--cd)" }}
                   />
+                  <button
+                    onClick={() => estimateItem(it)}
+                    disabled={!it.name.trim() || estimatingId !== null}
+                    className={`px-2.5 py-2 shrink-0 text-xs font-bold rounded-lg${estimatingId === it.id ? " animate-pulse" : ""}`}
+                    style={{
+                      background: "rgba(138,111,255,.12)",
+                      color: it.name.trim() ? "var(--pu)" : "var(--c5)",
+                    }}
+                    aria-label={`Estimate nutrition for ${it.name || "item"}`}
+                    title="AI-estimate calories & macros from the name"
+                  >
+                    {estimatingId === it.id ? "…" : "✨ Auto"}
+                  </button>
                   <button
                     onClick={() => removeItem(it.id)}
                     className="px-2 py-3 shrink-0 text-sm"

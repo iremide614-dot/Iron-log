@@ -48,6 +48,20 @@ export async function analyzeFood(dataURL: string): Promise<FoodAnalysis> {
   return res.json();
 }
 
+/** Estimate nutrition from a plain-text food description (manual entry). */
+export async function estimateFoodFromText(text: string): Promise<FoodAnalysis> {
+  const res = await fetch("/api/analyze-food", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text }),
+  });
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({}));
+    throw new Error(e.error || "Estimate failed");
+  }
+  return res.json();
+}
+
 /** Sum any list of macro-bearing things (diary entries, meal items…). */
 export function sumMacros(entries: Macros[]): Macros {
   return entries.reduce<Macros>(

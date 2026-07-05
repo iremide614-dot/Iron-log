@@ -22,6 +22,14 @@ Respond with ONLY compact JSON, no markdown, in exactly this shape:
 - calories: kcal for that item's visible portion; protein/carbs/fat: grams for that portion
 List every identifiable component separately — sauces and sides too, when visible. If you cannot identify any food, return name "Unknown" with one best-guess item.`;
 
+const TEXT_PROMPT = `You are a nutrition estimator. The user describes food in words. Estimate nutrition for a TYPICAL portion of each distinct food described (assume common serving sizes unless quantities are given).
+Respond with ONLY compact JSON, no markdown, in exactly this shape:
+{"name": string, "items": [{"name": string, "calories": number, "protein": number, "carbs": number, "fat": number}]}
+- name: a short overall name for what was described
+- items: one entry per distinct food mentioned
+- calories: kcal for the portion; protein/carbs/fat: grams for the portion
+Food description: `;
+
 function clampNum(v: unknown, fallback = 0): number {
   const n = typeof v === "number" ? v : parseFloat(String(v));
   if (!isFinite(n) || n < 0) return fallback;
@@ -52,8 +60,17 @@ function mockAnalysis(): FoodAnalysis {
   return { ...m, mock: true };
 }
 
+/** Mock for text estimates so manual entry works with no API key. */
+function mockTextAnalysis(text: string): FoodAnalysis {
+  return {
+    name: text,
+    items: [{ name: text, calories: 250, protein: 15, carbs: 25, fat: 9 }],
+    mock: true,
+  };
+}
+
 export async function POST(req: Request) {
-  let body: { image?: string; mime?: string };
+  let body: { image?: string; mime?: string; text?: string };
   try {
     body = await req.json();
   } catch {
@@ -61,30 +78,30 @@ export async function POST(req: Request) {
   }
 
   const { image, mime } = body;
-  if (!image) {
-    return NextResponse.json({ error: "No image provided" }, { status: 400 });
+  const text = body.text?.trim();
+  if (!image && !text) {
+    return NextResponse.json({ error: "No image or text provided" }, { status: 400 });
   }
 
   const key = process.env.GEMINI_API_KEY;
 
   // No key configured -> mock mode so the UI is fully usable today.
   if (!key) {
-    return NextResponse.json(mockAnalysis());
+    return NextResponse.json(text ? mockTextAnalysis(text) : mockAnalysis());
   }
 
   // strip a possible data: URL prefix
-  const base64 = image.includes(",") ? image.split(",")[1] : image;
+  const base64 = image?.includes(",") ? image.split(",")[1] : image;
 
   try {
+    const parts = text
+      ? [{ text: TEXT_PROMPT + text }]
+      : [
+          { text: PROMPT },
+          { inline_data: { mime_type: mime || "image/jpeg", data: base64! } },
+        ];
     const body = JSON.stringify({
-      contents: [
-        {
-          parts: [
-            { text: PROMPT },
-            { inline_data: { mime_type: mime || "image/jpeg", data: base64 } },
-          ],
-        },
-      ],
+      contents: [{ parts }],
       generationConfig: { temperature: 0.2, responseMimeType: "application/json" },
     });
 
@@ -118,9 +135,9 @@ export async function POST(req: Request) {
     }
 
     const data = await res.json();
-    const text: string =
+    const answer: string =
       data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "{}";
-    const cleaned = text.replace(/```json|```/g, "").trim();
+    const cleaned = answer.replace(/```json|```/g, "").trim();
     const parsed = JSON.parse(cleaned);
 
     const rawItems: unknown[] = Array.isArray(parsed.items) ? parsed.items : [];
