@@ -9,6 +9,7 @@ import { shortDate } from "@/lib/format";
 export function Progress() {
   const { workouts, bodyweight, profile, logBodyWeight } = useStore();
   const [bw, setBw] = useState("");
+  const [showAllPrs, setShowAllPrs] = useState(false);
 
   const prs = personalRecords(workouts);
 
@@ -77,22 +78,45 @@ export function Progress() {
             Complete some sets to start tracking PRs.
           </p>
         ) : (
-          <div className="flex flex-col gap-2">
-            {prs.map((pr) => (
-              <div key={pr.name} className="flex items-center justify-between">
-                <span className="text-sm" style={{ color: "var(--c2)" }}>
-                  {pr.name}
-                </span>
-                <span
-                  className="text-sm font-bold"
-                  style={{ color: "var(--gl)", fontFamily: "var(--font-dm-mono)" }}
+          <>
+            <div className="flex flex-col">
+              {(showAllPrs ? prs : prs.slice(0, 6)).map((pr, i) => (
+                <div
+                  key={pr.name}
+                  className="flex items-center justify-between gap-3 py-2.5"
+                  style={{ borderTop: i === 0 ? "none" : "1px solid var(--bd)" }}
                 >
-                  {pr.weight}
-                  {profile.unit} × {pr.reps}
-                </span>
-              </div>
-            ))}
-          </div>
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold truncate" style={{ color: "var(--c2)" }}>
+                      {pr.name}
+                    </div>
+                    <div className="text-[10px] mt-0.5" style={{ color: "var(--c4)" }}>
+                      {shortDate(pr.date)}
+                    </div>
+                  </div>
+                  <span
+                    className="text-xs font-bold px-2.5 py-1.5 rounded-lg shrink-0"
+                    style={{
+                      background: "rgba(176,128,48,.12)",
+                      color: "var(--gl)",
+                      fontFamily: "var(--font-dm-mono)",
+                    }}
+                  >
+                    {pr.weight}{profile.unit} × {pr.reps}
+                  </span>
+                </div>
+              ))}
+            </div>
+            {prs.length > 6 && (
+              <button
+                onClick={() => setShowAllPrs((v) => !v)}
+                className="w-full text-xs font-semibold mt-2 py-2 rounded-lg"
+                style={{ background: "var(--ip)", color: "var(--c3)" }}
+              >
+                {showAllPrs ? "Show less" : `Show all ${prs.length}`}
+              </button>
+            )}
+          </>
         )}
       </Section>
     </div>

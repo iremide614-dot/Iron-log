@@ -33,6 +33,20 @@ export function Food() {
   const totals = sumMacros(dayEntries);
   const draftTotals = draft ? sumMacros(draft.items) : null;
 
+  // most recent unique meals (by name) for one-tap repeating
+  const recentMeals = useMemo(() => {
+    const seen = new Set<string>();
+    const out: typeof food = [];
+    for (const f of food) {
+      const key = f.name.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(f);
+      if (out.length >= 5) break;
+    }
+    return out;
+  }, [food]);
+
   function shiftDay(delta: number) {
     const d = new Date(date + "T12:00:00");
     d.setDate(d.getDate() + delta);
@@ -65,6 +79,25 @@ export function Food() {
   function startManual() {
     setError(null);
     setDraft({ name: "", items: [blankItem()] });
+    setStage("review");
+  }
+
+  /** Pre-fill the review form from a past meal so it can be tweaked and re-logged. */
+  function repeatMeal(entry: (typeof food)[number]) {
+    setError(null);
+    const items: FoodItem[] = entry.items?.length
+      ? entry.items.map((it) => ({ ...it, id: uid() }))
+      : [
+          {
+            id: uid(),
+            name: entry.name,
+            calories: entry.calories,
+            protein: entry.protein,
+            carbs: entry.carbs,
+            fat: entry.fat,
+          },
+        ];
+    setDraft({ name: entry.name, items, thumb: entry.thumb });
     setStage("review");
   }
 
@@ -165,22 +198,70 @@ export function Food() {
       />
 
       {stage === "idle" && (
-        <div className="flex gap-2 mb-4">
-          <button
-            onClick={() => fileRef.current?.click()}
-            className="flex-1 rounded-xl py-3 text-sm font-bold"
-            style={{ background: "linear-gradient(135deg,var(--pu),#6a4fd0)", color: "#fff" }}
-          >
-            📷 Snap a meal
-          </button>
-          <button
-            onClick={startManual}
-            className="px-4 rounded-xl text-sm font-semibold"
-            style={{ background: "var(--ip)", color: "var(--c2)" }}
-          >
-            Manual
-          </button>
-        </div>
+        <>
+          <div className="flex gap-2 mb-4">
+            <button
+              onClick={() => fileRef.current?.click()}
+              className="flex-1 rounded-xl py-3 text-sm font-bold"
+              style={{ background: "linear-gradient(135deg,var(--pu),#6a4fd0)", color: "#fff" }}
+            >
+              📷 Snap a meal
+            </button>
+            <button
+              onClick={startManual}
+              className="px-4 rounded-xl text-sm font-semibold"
+              style={{ background: "var(--ip)", color: "var(--c2)" }}
+            >
+              Manual
+            </button>
+          </div>
+
+          {recentMeals.length > 0 && (
+            <div className="mb-4">
+              <div
+                className="text-[10px] font-semibold tracking-[2px] mb-2"
+                style={{ color: "var(--c4)" }}
+              >
+                REPEAT A MEAL
+              </div>
+              <div className="flex flex-col gap-2">
+                {recentMeals.map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => repeatMeal(f)}
+                    className="rounded-xl p-2.5 flex items-center gap-3 text-left"
+                    style={{ background: "var(--cd)", border: "1px solid var(--bd)" }}
+                  >
+                    {f.thumb ? (
+                      <img src={f.thumb} alt="" className="w-9 h-9 rounded-lg object-cover shrink-0" />
+                    ) : (
+                      <div
+                        className="w-9 h-9 rounded-lg shrink-0 flex items-center justify-center text-sm"
+                        style={{ background: "var(--ip)" }}
+                      >
+                        🍽
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold truncate" style={{ color: "var(--c2)" }}>
+                        {f.name}
+                      </div>
+                      <div className="text-[10px]" style={{ color: "var(--c4)" }}>
+                        {f.calories} kcal · P{f.protein} C{f.carbs} F{f.fat}
+                      </div>
+                    </div>
+                    <span
+                      className="text-xs font-bold px-2.5 py-1.5 rounded-lg shrink-0"
+                      style={{ background: "rgba(138,111,255,.12)", color: "var(--pu)" }}
+                    >
+                      ↻ Log
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {stage === "analyzing" && (
