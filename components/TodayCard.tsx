@@ -18,6 +18,7 @@ export function TodayCard() {
   // ---- setup state ----
   const latestBw = bodyweight.length ? bodyweight[bodyweight.length - 1].weight : undefined;
   const [mode, setMode] = useState<GoalMode>(profile.goalMode ?? "maintain");
+  const [unit, setUnit] = useState<"kg" | "lb">(profile.unit);
   const [weight, setWeight] = useState<string>(latestBw ? String(latestBw) : "");
   const [calOverride, setCalOverride] = useState<string>("");
 
@@ -27,7 +28,7 @@ export function TodayCard() {
   }, [latestBw]);
 
   const w = parseFloat(weight);
-  const computed = !isNaN(w) && w > 0 ? computeTargets(w, profile.unit, mode) : null;
+  const computed = !isNaN(w) && w > 0 ? computeTargets(w, unit, mode) : null;
   const finalCalories = calOverride ? parseInt(calOverride) || 0 : computed?.calories ?? 0;
 
   function save() {
@@ -36,6 +37,7 @@ export function TodayCard() {
       goalMode: mode,
       calorieGoal: finalCalories,
       proteinGoal: computed?.protein,
+      unit,
     });
     setCalOverride("");
     setEditing(false);
@@ -85,18 +87,35 @@ export function TodayCard() {
           {GOAL_LABELS[mode].hint}
         </p>
 
-        <label className="block mb-3">
-          <span className="text-[10px] block mb-1" style={{ color: "var(--c4)" }}>
-            Your body weight ({profile.unit})
-          </span>
+        <div className="mb-3">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px]" style={{ color: "var(--c4)" }}>
+              Your body weight
+            </span>
+            <div className="flex rounded-lg overflow-hidden" style={{ border: "1px solid var(--bd)" }}>
+              {(["lb", "kg"] as const).map((u) => (
+                <button
+                  key={u}
+                  onClick={() => setUnit(u)}
+                  className="px-3 py-1 text-[10px] font-bold"
+                  style={{
+                    background: unit === u ? "var(--bl)" : "var(--ip)",
+                    color: unit === u ? "#000" : "var(--c4)",
+                  }}
+                >
+                  {u}
+                </button>
+              ))}
+            </div>
+          </div>
           <input
             type="number"
             inputMode="decimal"
-            placeholder={`e.g. ${profile.unit === "kg" ? "82.5" : "180"}`}
+            placeholder={`e.g. ${unit === "kg" ? "82.5" : "180"}`}
             value={weight}
             onChange={(e) => setWeight(e.target.value)}
           />
-        </label>
+        </div>
 
         {computed && (
           <div

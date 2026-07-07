@@ -20,7 +20,7 @@ import type {
   FoodEntry,
 } from "./types";
 
-const DEFAULT_PROFILE: Profile = { unit: "kg", restSeconds: 90, calorieGoal: 2200 };
+const DEFAULT_PROFILE: Profile = { unit: "lb", restSeconds: 90, calorieGoal: 2200 };
 
 type Store = {
   ready: boolean;

@@ -178,7 +178,7 @@ export function ActiveWorkout({ go }: { go: (t: Tab) => void }) {
                     <input
                       type="number"
                       inputMode="decimal"
-                      placeholder="kg"
+                      placeholder={profile.unit}
                       value={set.weight}
                       onChange={(e) => updateSet(ex.id, set.id, { weight: e.target.value })}
                       style={{ flex: 1 }}
