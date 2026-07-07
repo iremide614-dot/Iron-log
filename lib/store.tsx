@@ -20,7 +20,7 @@ import type {
   FoodEntry,
 } from "./types";
 
-const DEFAULT_PROFILE: Profile = { unit: "kg", restSeconds: 90 };
+const DEFAULT_PROFILE: Profile = { unit: "kg", restSeconds: 90, calorieGoal: 2200 };
 
 type Store = {
   ready: boolean;
@@ -92,7 +92,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setWorkouts(storage.get<Workout[]>(KEYS.workouts) ?? []);
     setActive(storage.get<Workout>(KEYS.active));
     setBodyweight(storage.get<BodyWeight[]>(KEYS.bodyweight) ?? []);
-    setProfile(storage.get<Profile>(KEYS.profile) ?? DEFAULT_PROFILE);
+    // merge so profiles saved before new fields existed pick up defaults
+    setProfile({ ...DEFAULT_PROFILE, ...(storage.get<Profile>(KEYS.profile) ?? {}) });
     setFood(storage.get<FoodEntry[]>(KEYS.food) ?? []);
     setReady(true);
   }, []);

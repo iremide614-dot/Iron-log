@@ -5,6 +5,7 @@ import { useStore } from "@/lib/store";
 import { streak } from "@/lib/workouts";
 import { shortDate, fmtDuration } from "@/lib/format";
 import { Reminders } from "../Reminders";
+import { TodayCard } from "../TodayCard";
 import type { Tab } from "../AppShell";
 
 export function Home({ go }: { go: (t: Tab) => void }) {
@@ -20,6 +21,9 @@ export function Home({ go }: { go: (t: Tab) => void }) {
 
   return (
     <div className="scroll-area px-5 py-4 pb-24">
+      {/* today: calories vs goal, meals, workout */}
+      <TodayCard />
+
       {/* streak */}
       <div
         className="rounded-2xl p-4 mb-4"

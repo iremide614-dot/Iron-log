@@ -7,6 +7,7 @@ import {
   saveRecord,
   deleteRecord,
   nowInTz,
+  pushStore,
 } from "../../lib/push-server";
 
 const MESSAGES: Record<string, { title: string; body: string }> = {
@@ -16,16 +17,25 @@ const MESSAGES: Record<string, { title: string; body: string }> = {
   dinner: { title: "Log dinner 🌙", body: "Close out the day — log your dinner." },
 };
 
+type Snapshot = {
+  date: string;
+  remaining: number;
+  slots: { breakfast: boolean; lunch: boolean; dinner: boolean };
+  workedOut: boolean;
+} | null;
+
 // fire window: reminder time <= now < time + 20min (covers cron drift)
 const WINDOW_MIN = 20;
 
 export default async function handler() {
   const wp = await configuredWebpush();
   const records = await listRecords();
+  const snapshot = (await pushStore().get("status", { type: "json" })) as Snapshot;
   let sent = 0;
 
   for (const { record } of records) {
     const { date, minutes } = nowInTz(record.tz || "UTC");
+    const fresh = snapshot && snapshot.date === date ? snapshot : null;
     let dirty = false;
 
     for (const rem of record.reminders) {
@@ -35,7 +45,27 @@ export default async function handler() {
       const target = h * 60 + m;
       if (minutes < target || minutes >= target + WINDOW_MIN) continue;
 
-      const msg = MESSAGES[rem.id] ?? { title: "RECOMP 🔔", body: rem.label };
+      // skip what's already handled today (client snapshot)
+      if (fresh) {
+        if (rem.id === "workout" && fresh.workedOut) {
+          record.lastSent[rem.id] = date;
+          dirty = true;
+          continue;
+        }
+        if (
+          (rem.id === "breakfast" || rem.id === "lunch" || rem.id === "dinner") &&
+          fresh.slots[rem.id]
+        ) {
+          record.lastSent[rem.id] = date;
+          dirty = true;
+          continue;
+        }
+      }
+
+      const msg = { ...(MESSAGES[rem.id] ?? { title: "RECOMP 🔔", body: rem.label }) };
+      if (fresh && rem.id !== "workout" && fresh.remaining > 0) {
+        msg.body = `${msg.body.replace(/\.$/, "")} — ${fresh.remaining} kcal left today.`;
+      }
       try {
         await wp.sendNotification(
           record.subscription,

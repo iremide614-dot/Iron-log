@@ -33,10 +33,18 @@ export type BodyWeight = {
   weight: number;
 };
 
+export type GoalMode = "cut" | "maintain" | "bulk";
+
 export type Profile = {
   name?: string;
   unit: "kg" | "lb";
   restSeconds: number;
+  /** cutting / maintaining / bulking — drives the calorie target */
+  goalMode?: GoalMode;
+  /** daily calorie target for the Today card / icon badge */
+  calorieGoal: number;
+  /** daily protein target (g) */
+  proteinGoal?: number;
 };
 
 // ===== food tracking =====

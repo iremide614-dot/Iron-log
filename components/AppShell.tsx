@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { StoreProvider, useStore } from "@/lib/store";
+import { todayStatus, updateBadge, syncStatus } from "@/lib/today";
 import { Home } from "./screens/Home";
 import { ActiveWorkout } from "./screens/ActiveWorkout";
 import { History } from "./screens/History";
@@ -18,7 +19,7 @@ const NAV: { id: Tab; label: string }[] = [
 ];
 
 function Shell() {
-  const { ready, active } = useStore();
+  const { ready, active, food, workouts, profile } = useStore();
   const [tab, setTab] = useState<Tab>("home");
 
   // service worker: PWA install + push notifications
@@ -27,6 +28,14 @@ function Shell() {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
     }
   }, []);
+
+  // keep the icon badge (calories left) + server snapshot in sync
+  useEffect(() => {
+    if (!ready) return;
+    const status = todayStatus(food, workouts, profile);
+    updateBadge(status);
+    syncStatus(status);
+  }, [ready, food, workouts, profile]);
 
   if (!ready) {
     return (
