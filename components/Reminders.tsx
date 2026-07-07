@@ -73,8 +73,17 @@ export function Reminders() {
       if (!sub) throw new Error("Enable reminders first");
       await sendTest(sub);
       setNote("Test sent — check your notifications");
-    } catch (e) {
-      setNote(e instanceof Error ? e.message : "Test failed");
+    } catch {
+      // likely a stale subscription (e.g. VAPID key mismatch) — re-subscribe and retry once
+      try {
+        setNote("Fixing subscription…");
+        const fresh = await enableReminders(prefs);
+        storage.set("rem", prefs);
+        await sendTest(fresh);
+        setNote("Re-subscribed & test sent ✓");
+      } catch (e2) {
+        setNote(e2 instanceof Error ? e2.message : "Test failed");
+      }
     }
   }
 

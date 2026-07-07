@@ -31,20 +31,39 @@ function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
   return out;
 }
 
-/** Ask permission, subscribe to push, and save prefs on the server. */
+/** Ask permission, subscribe to push, and save prefs on the server.
+ *  Self-heals: if the device is subscribed under a stale VAPID key
+ *  (server key changed), it re-subscribes with the current one. */
 export async function enableReminders(reminders: ReminderPref[]): Promise<PushSubscription> {
   const permission = await Notification.requestPermission();
   if (permission !== "granted") throw new Error("Notifications not allowed");
 
+  const res = await fetch("/api/push/key");
+  if (!res.ok) throw new Error("Push server unavailable");
+  const { publicKey } = await res.json();
+  const serverKey = urlBase64ToUint8Array(publicKey);
+
   const reg = await navigator.serviceWorker.ready;
   let sub = await reg.pushManager.getSubscription();
+
+  if (sub) {
+    const raw = sub.options?.applicationServerKey;
+    const current = raw ? new Uint8Array(raw) : null;
+    const same =
+      current !== null &&
+      current.length === serverKey.length &&
+      current.every((v, i) => v === serverKey[i]);
+    if (!same) {
+      // stale key -> Apple/Google would reject sends (VapidPkHashMismatch)
+      await sub.unsubscribe().catch(() => {});
+      sub = null;
+    }
+  }
+
   if (!sub) {
-    const res = await fetch("/api/push/key");
-    if (!res.ok) throw new Error("Push server unavailable");
-    const { publicKey } = await res.json();
     sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(publicKey),
+      applicationServerKey: serverKey,
     });
   }
   await savePrefs(sub, reminders);
