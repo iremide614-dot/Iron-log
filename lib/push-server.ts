@@ -21,7 +21,9 @@ export type PushRecord = {
 const VAPID_SUBJECT = "mailto:iremide614@gmail.com";
 
 export function pushStore() {
-  return getStore("push");
+  // strong consistency: a subscribe followed by an immediate test-send must
+  // see the record (default "eventual" reads can miss fresh writes)
+  return getStore({ name: "push", consistency: "strong" });
 }
 
 export async function getVapidKeys(): Promise<{ publicKey: string; privateKey: string }> {
